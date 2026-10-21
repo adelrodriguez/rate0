@@ -10,8 +10,10 @@ const exportPaths = [
   packageJson.module,
   packageJson.types,
   packageJson.exports["."].import,
-  packageJson.exports["./redis"].import,
-  packageJson.exports["./redis"].types,
+  packageJson.exports["./stores/memory"].import,
+  packageJson.exports["./stores/memory"].types,
+  packageJson.exports["./stores/redis"].import,
+  packageJson.exports["./stores/redis"].types,
 ]
 
 function run(command: string, arguments_: string[], cwd: string) {
@@ -45,8 +47,9 @@ try {
     join(temporaryDirectory, "runtime.mjs"),
     `import assert from "node:assert/strict"
 
-import { buildLimiter, fixedWindow, InvalidOptionError, memoryStore, rateLimit } from "rate0"
-import { redisStore } from "rate0/redis"
+import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "rate0"
+import { memoryStore } from "rate0/stores/memory"
+import { redisStore } from "rate0/stores/redis"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), name: "key" })
@@ -61,10 +64,11 @@ assert.equal(typeof redisStore, "function")
 
   writeFileSync(
     join(temporaryDirectory, "consumer.ts"),
-    `import { buildLimiter, fixedWindow, memoryStore, rateLimit } from "rate0"
+    `import { buildLimiter, fixedWindow, rateLimit } from "rate0"
 import type { LimitResult } from "rate0"
-import { redisStore } from "rate0/redis"
-import type { RedisSend } from "rate0/redis"
+import { memoryStore } from "rate0/stores/memory"
+import { redisStore } from "rate0/stores/redis"
+import type { RedisSend } from "rate0/stores/redis"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perIp = limiter({

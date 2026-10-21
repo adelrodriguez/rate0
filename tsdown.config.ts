@@ -3,7 +3,11 @@ import { defineConfig } from "tsdown"
 export default defineConfig({
   clean: true,
   dts: true,
-  entry: ["src/index.ts", "src/redis.ts"],
+  entry: {
+    index: "src/index.ts",
+    "stores/memory": "src/stores/memory.ts",
+    "stores/redis": "src/stores/redis.ts",
+  },
   fixedExtension: false,
   minify: true,
   outDir: "dist",

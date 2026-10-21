@@ -30,7 +30,10 @@ export default defineConfig({
           "error",
           {
             patterns: [
-              { group: ["#index.ts", "#redis.ts"], message: "lib must not import an entry point." },
+              {
+                group: ["#index.ts", "#stores/**"],
+                message: "lib must not import an entry point.",
+              },
             ],
           },
         ],
@@ -46,7 +49,7 @@ export default defineConfig({
               {
                 group: [
                   "#index.ts",
-                  "#redis.ts",
+                  "#stores/**",
                   "#lib/algorithms/**",
                   "#lib/store/**",
                   "#lib/memory/**",
@@ -70,7 +73,7 @@ export default defineConfig({
               {
                 group: [
                   "#index.ts",
-                  "#redis.ts",
+                  "#stores/**",
                   "#lib/store/**",
                   "#lib/memory/**",
                   "#lib/redis/**",
@@ -93,7 +96,7 @@ export default defineConfig({
               {
                 group: [
                   "#index.ts",
-                  "#redis.ts",
+                  "#stores/**",
                   "#lib/memory/**",
                   "#lib/redis/**",
                   "#lib/limiter/**",
@@ -113,7 +116,7 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: ["#index.ts", "#redis.ts", "#lib/redis/**", "#lib/limiter/**"],
+                group: ["#index.ts", "#stores/**", "#lib/redis/**", "#lib/limiter/**"],
                 message: "A store must not import another store or limiters.",
               },
             ],
@@ -129,7 +132,7 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: ["#index.ts", "#redis.ts", "#lib/memory/**", "#lib/limiter/**"],
+                group: ["#index.ts", "#stores/**", "#lib/memory/**", "#lib/limiter/**"],
                 message: "A store must not import another store or limiters.",
               },
             ],
@@ -145,7 +148,7 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: ["#index.ts", "#redis.ts", "#lib/memory/**", "#lib/redis/**"],
+                group: ["#index.ts", "#stores/**", "#lib/memory/**", "#lib/redis/**"],
                 message: "Limiters know only the store contract, not a concrete store.",
               },
             ],

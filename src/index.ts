@@ -26,8 +26,6 @@ export { headers } from "#lib/limiter/headers.ts"
 export type { Identity } from "#lib/limiter/identity.ts"
 export type { LimitResults, RateLimitOptions } from "#lib/limiter/rate-limit.ts"
 export { clear, rateLimit, remaining } from "#lib/limiter/rate-limit.ts"
-export type { MemoryStoreOptions } from "#lib/memory/memory-store.ts"
-export { memoryStore } from "#lib/memory/memory-store.ts"
 export {
   InvalidOptionError,
   InvalidReplyError,

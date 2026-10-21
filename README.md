@@ -62,7 +62,7 @@ Create a limiter factory with a store, define a limiter, and run it:
 ```typescript
 import Redis from "ioredis"
 import { buildLimiter, rateLimit, slidingWindow } from "rate0"
-import { redisStore } from "rate0/redis"
+import { redisStore } from "rate0/stores/redis"
 
 const redis = new Redis(process.env.REDIS_URL)
 
@@ -385,7 +385,7 @@ A store holds the counts and applies an algorithm to them in one indivisible ste
 `redisStore` works with Redis 7 or later, Valkey 7.2 or later, and other servers that speak the Redis protocol and run Lua scripts. Give it a function that sends one command:
 
 ```typescript
-import { redisStore } from "rate0/redis"
+import { redisStore } from "rate0/stores/redis"
 
 // ioredis
 redisStore({ send: (command, args) => redis.call(command, args) })
@@ -403,7 +403,7 @@ Every check touches a single key, as Redis Cluster requires.
 `memoryStore` counts in the current process. Each instance of your application counts separately, and a restart clears all counts. Use it for tests, for single-instance applications, and as a fallback.
 
 ```typescript
-import { memoryStore } from "rate0"
+import { memoryStore } from "rate0/stores/memory"
 
 memoryStore()
 memoryStore({ clock: () => fakeNow }) // a clock you control, for tests

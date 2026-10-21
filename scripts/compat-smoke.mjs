@@ -11,7 +11,9 @@ import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
 const distDir = resolve(process.argv[2] ?? "dist")
-const entries = ["index.js", "redis.js"].map((file) => resolve(distDir, file))
+const entries = ["index.js", "stores/memory.js", "stores/redis.js"].map((file) =>
+  resolve(distDir, file)
+)
 
 function check(condition, message) {
   if (!condition) {
@@ -53,11 +55,15 @@ delete Set.prototype.union
  */
 const library = await import(pathToFileURL(entries[0]).href)
 /**
- * @type {typeof import("../src/redis")}
+ * @type {typeof import("../src/stores/memory")}
  */
-const redis = await import(pathToFileURL(entries[1]).href)
+const memory = await import(pathToFileURL(entries[1]).href)
+/**
+ * @type {typeof import("../src/stores/redis")}
+ */
+const redis = await import(pathToFileURL(entries[2]).href)
 
-const limiter = library.buildLimiter({ store: library.memoryStore() })
+const limiter = library.buildLimiter({ store: memory.memoryStore() })
 const algorithm = library.fixedWindow({ limit: 1, window: 60_000 })
 const perKey = limiter({ algorithm, name: "key" })
 
