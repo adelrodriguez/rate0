@@ -40,7 +40,7 @@ You define limiters once and run them with plain functions. rate0 has no framewo
 
 - **Atomic:** Each check runs as one indivisible step in the store, such as a Lua script in Redis.
 - **Three algorithms:** Fixed window, sliding window, and token bucket, as in `@upstash/ratelimit`. A denied request spends nothing, the cost is checked before any units are spent, and a denial reports the exact time the request can succeed.
-- **Any Redis client:** Connect ioredis, Bun's Redis client, or any other client with one function. No type assertions.
+- **Your Redis client as it is:** Pass an ioredis, node-redis, iovalkey, or Bun client straight to its store. No adapter, no type assertions.
 - **Safe on failure:** When the store fails, the result is never a success, so a spending cap stays a cap.
 - **One clock:** Windows follow the store's clock, so instances with drifting clocks agree.
 - **Composable:** Limiters are definitions that plain functions run. Build middleware for any platform.
@@ -67,7 +67,7 @@ import { redisStore } from "rate0/stores/redis"
 const redis = new Redis(process.env.REDIS_URL)
 
 const limiter = buildLimiter({
-  store: redisStore({ send: (command, args) => redis.call(command, args) }),
+  store: redisStore(redis),
 })
 
 const perIp = limiter({
@@ -380,19 +380,25 @@ A dry-run limiter never stops a chain of limiters, never decides a chain that ha
 
 A store holds the counts and applies an algorithm to them in one indivisible step.
 
-### Redis and Valkey
+### Redis, Valkey, and Bun
 
-`redisStore` works with Redis 7 or later, Valkey 7.2 or later, and other servers that speak the Redis protocol and run Lua scripts. Give it a function that sends one command:
+Each client has its own store. Pass the client as it is:
 
 ```typescript
+// ioredis or node-redis
 import { redisStore } from "rate0/stores/redis"
+redisStore(redis)
 
-// ioredis
-redisStore({ send: (command, args) => redis.call(command, args) })
+// iovalkey
+import { valkeyStore } from "rate0/stores/valkey"
+valkeyStore(valkey)
 
-// Bun
-redisStore({ send: (command, args) => redis.send(command, args) })
+// Bun's own client
+import { bunStore } from "rate0/stores/bun"
+bunStore(new Bun.RedisClient(process.env.REDIS_URL))
 ```
+
+The stores work with Redis 7 or later and Valkey 7.2 or later, on any server that speaks the Redis protocol and runs Lua scripts. They run the same scripts, so they count the same way.
 
 Each check runs one Lua script with `EVALSHA`, and loads the script with `EVAL` when the server does not have it. Scripts read the time with `TIME`, so every instance agrees on window boundaries. Keys expire when their state no longer matters.
 
@@ -445,7 +451,7 @@ Key-value abstractions such as unstorage drivers cannot be stores, because they 
 
 ## Errors
 
-rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, and the rest from `rate0`:
+rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, `rate0/stores/valkey`, and `rate0/stores/bun`, and the rest from `rate0`:
 
 | Error                | Fields            | When                                                                    |
 | -------------------- | ----------------- | ----------------------------------------------------------------------- |
@@ -460,7 +466,7 @@ rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/st
 
 |                         | rate0                        | @upstash/ratelimit                       | hono-rate-limiter        | rate-limiter-flexible |
 | ----------------------- | ---------------------------- | ---------------------------------------- | ------------------------ | --------------------- |
-| Stores                  | Redis, Valkey, memory        | Upstash Redis over HTTP                  | Memory, Redis, unstorage | Many                  |
+| Stores                  | Redis, Valkey, Bun, memory   | Upstash Redis over HTTP                  | Memory, Redis, unstorage | Many                  |
 | Algorithms              | Fixed, sliding, bucket       | Fixed, sliding, bucket                   | Fixed                    | Fixed                 |
 | Counts across instances | Yes                          | Yes                                      | Not with memory          | Yes                   |
 | Atomic in every store   | Yes                          | Yes                                      | Not with unstorage       | Yes                   |

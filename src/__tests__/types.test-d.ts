@@ -1,5 +1,7 @@
 import type { RedisClient } from "bun"
 import type { Redis } from "ioredis"
+import type { Valkey } from "iovalkey"
+import type { RedisClientType } from "redis"
 import { describe, expectTypeOf, it } from "vitest"
 import type {
   FixedWindow,
@@ -11,9 +13,11 @@ import type {
   Store,
   StoreError,
 } from "#index.ts"
-import type { RedisSend } from "#stores/redis.ts"
 import { buildLimiter, fixedWindow, rateLimit, tokenBucket } from "#index.ts"
+import { bunStore } from "#stores/bun.ts"
 import { memoryStore } from "#stores/memory.ts"
+import { redisStore } from "#stores/redis.ts"
+import { valkeyStore } from "#stores/valkey.ts"
 
 type Request = { readonly ip: string }
 
@@ -26,10 +30,9 @@ const request: Request = { ip: "203.0.113.7" }
 
 declare const fixedOnly: Store<FixedWindow>
 declare const ioredis: Redis
+declare const nodeRedis: RedisClientType
+declare const iovalkey: Valkey
 declare const bun: RedisClient
-
-const fromIoredis: RedisSend = (command, args) => ioredis.call(command, args)
-const fromBun: RedisSend = (command, args) => bun.send(command, args)
 
 describe("limiter", () => {
   it("takes its input type from identify", () => {
@@ -121,10 +124,19 @@ describe("LimitResult", () => {
   })
 })
 
-describe("RedisSend", () => {
-  it("accepts ioredis and Bun without assertions", () => {
-    expectTypeOf(fromIoredis).toExtend<RedisSend>()
-    expectTypeOf(fromBun).toExtend<RedisSend>()
+describe("client stores", () => {
+  it("take each client as it is", () => {
+    expectTypeOf(redisStore(ioredis)).toEqualTypeOf<Store>()
+    expectTypeOf(redisStore(nodeRedis)).toEqualTypeOf<Store>()
+    expectTypeOf(valkeyStore(iovalkey)).toEqualTypeOf<Store>()
+    expectTypeOf(bunStore(bun)).toEqualTypeOf<Store>()
+  })
+
+  it("reject a client they cannot send commands through", () => {
+    // @ts-expect-error -- Bun's client sends with `send`, which the Redis store does not use.
+    void redisStore(bun)
+    // @ts-expect-error -- node-redis sends with `sendCommand`, which the Bun store does not use.
+    void bunStore(nodeRedis)
   })
 })
 

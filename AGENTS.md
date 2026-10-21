@@ -74,9 +74,12 @@ Packref provides local copies of dependency source code so you can inspect the e
 - A new store goes in `src/lib/stores/<name>/`, with its public entry in `src/stores/<name>.ts`, a `./stores/<name>` export in `package.json`, and an entry in `tsdown.config.ts`. The lint rules already cover it.
 - An error class lives with the code that throws it.
 - The Redis scripts are plain `.lua` files. `scripts.macro.ts` inlines them into the bundle at build time through `unplugin-macros`, so the package never reads files at run time.
+- `src/lib/stores/redis/` holds one store per client: `redis-store.ts` (ioredis and node-redis), `valkey-store.ts` (iovalkey), and `bun-store.ts` (`Bun.RedisClient`). Each takes the client as it is and adapts it to `scriptStore` in `script-store.ts`, which runs the scripts. A new client for these servers gets its own store here.
 
 ## Tests
 
-- The Redis store tests need a server at `REDIS_URL`, which defaults to `redis://localhost:6379`. Start one with `docker run --rm -p 6379:6379 redis:8`.
-- Run `bun --bun vitest run src/lib/stores/redis` to also test Bun's Redis client.
+- `pnpm run test` runs the unit tests, which need no server. Each store has its own Vitest project and script: `test:redis-store`, `test:valkey-store`, and `test:bun-store`. CI runs each as its own job.
+- The store tests need a server at `REDIS_URL`, which defaults to `redis://localhost:6379`. Start one with `docker run --rm -p 6379:6379 redis:8`, or `valkey/valkey:8` for the Valkey store.
+- `test:bun-store` runs Vitest on Bun, so it needs Bun installed.
+- `script-store.test.ts` tests the scripts themselves and runs with both the Redis and the Valkey store tests.
 - Every store runs the shared suite in `src/lib/store/__tests__/conformance.ts`. A new store must pass it.

@@ -12,8 +12,12 @@ const exportPaths = [
   packageJson.exports["."].import,
   packageJson.exports["./stores/memory"].import,
   packageJson.exports["./stores/memory"].types,
+  packageJson.exports["./stores/bun"].import,
+  packageJson.exports["./stores/bun"].types,
   packageJson.exports["./stores/redis"].import,
   packageJson.exports["./stores/redis"].types,
+  packageJson.exports["./stores/valkey"].import,
+  packageJson.exports["./stores/valkey"].types,
 ]
 
 function run(command: string, arguments_: string[], cwd: string) {
@@ -49,7 +53,9 @@ try {
 
 import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "rate0"
 import { memoryStore } from "rate0/stores/memory"
+import { bunStore } from "rate0/stores/bun"
 import { redisStore } from "rate0/stores/redis"
+import { valkeyStore } from "rate0/stores/valkey"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), name: "key" })
@@ -57,7 +63,9 @@ const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), n
 assert.equal((await rateLimit(perKey, "a")).success, true)
 assert.equal((await rateLimit(perKey, "a")).success, false)
 assert.throws(() => fixedWindow({ limit: 0, window: 1 }), InvalidOptionError)
+assert.equal(typeof bunStore, "function")
 assert.equal(typeof redisStore, "function")
+assert.equal(typeof valkeyStore, "function")
 `
   )
   run(process.execPath, ["runtime.mjs"], temporaryDirectory)
@@ -68,7 +76,7 @@ assert.equal(typeof redisStore, "function")
 import type { LimitResult } from "rate0"
 import { memoryStore } from "rate0/stores/memory"
 import { redisStore } from "rate0/stores/redis"
-import type { RedisSend } from "rate0/stores/redis"
+import type { IoredisClient } from "rate0/stores/redis"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perIp = limiter({
@@ -77,12 +85,12 @@ const perIp = limiter({
   name: "ip",
 })
 const result: Promise<LimitResult> = rateLimit(perIp, { ip: "203.0.113.7" })
-const send: RedisSend = () => Promise.resolve([1, 0, 0, 0])
+const client: IoredisClient = { call: () => Promise.resolve([1, 0, 0, 0]) }
 
 // @ts-expect-error -- perIp identifies a request, not a string.
 void rateLimit(perIp, "203.0.113.7")
 
-void [result, redisStore({ send })]
+void [result, redisStore(client)]
 `
   )
   writeFileSync(
