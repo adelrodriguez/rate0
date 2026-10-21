@@ -73,6 +73,7 @@ Packref provides local copies of dependency source code so you can inspect the e
 - A folder imports its own files with `./`, and other folders with `#lib/...`.
 - A new store goes in `src/lib/stores/<name>/`, with its public entry in `src/stores/<name>.ts`, a `./stores/<name>` export in `package.json`, and an entry in `tsdown.config.ts`. The lint rules already cover it.
 - An error class lives with the code that throws it.
+- The Redis scripts are plain `.lua` files. `scripts.macro.ts` inlines them into the bundle at build time through `unplugin-macros`, so the package never reads files at run time.
 
 ## Tests
 

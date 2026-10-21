@@ -1,6 +1,6 @@
 import type { Algorithm } from "#lib/algorithms/algorithms.ts"
 import type { Store, StoreResult } from "#lib/store/store.ts"
-import * as scripts from "./scripts.ts"
+import { readScript } from "./scripts.macro.ts" with { type: "macro" }
 
 /**
  * Sends one command to Redis and returns its reply. Adapt any client in one line:
@@ -22,9 +22,9 @@ type Script = { readonly source: string; readonly sha: Promise<string> }
  */
 export function redisStore({ send }: RedisStoreOptions): Store {
   const loaded = {
-    fixedWindow: script(scripts.fixedWindow),
-    slidingWindow: script(scripts.slidingWindow),
-    tokenBucket: script(scripts.tokenBucket),
+    fixedWindow: script(readScript("fixed-window.lua")),
+    slidingWindow: script(readScript("sliding-window.lua")),
+    tokenBucket: script(readScript("token-bucket.lua")),
   }
 
   async function evaluate({ source, sha }: Script, key: string, args: string[]) {

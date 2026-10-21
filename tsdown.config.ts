@@ -1,4 +1,5 @@
 import { defineConfig } from "tsdown"
+import { Macros } from "unplugin-macros"
 
 export default defineConfig({
   clean: true,
@@ -12,6 +13,7 @@ export default defineConfig({
   minify: true,
   outDir: "dist",
   platform: "node",
+  plugins: [Macros.rolldown()],
   sourcemap: false,
   tsconfig: "tsconfig.build.json",
 })
