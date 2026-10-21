@@ -1,2 +1,2 @@
-export type { MemoryStoreOptions } from "#lib/memory/memory-store.ts"
-export { memoryStore } from "#lib/memory/memory-store.ts"
+export type { MemoryStoreOptions } from "#lib/stores/memory/memory-store.ts"
+export { memoryStore } from "#lib/stores/memory/memory-store.ts"

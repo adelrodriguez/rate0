@@ -1,4 +1,4 @@
-import type { LimitResult } from "#lib/limiter/build-limiter.ts"
+import type { LimitResult } from "./build-limiter.ts"
 
 /**
  * Builds the `RateLimit-Policy` and `RateLimit` headers of the IETF RateLimit header fields draft,

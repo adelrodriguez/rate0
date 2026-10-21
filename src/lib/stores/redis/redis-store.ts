@@ -1,7 +1,6 @@
 import type { Algorithm } from "#lib/algorithms/algorithms.ts"
 import type { Store, StoreResult } from "#lib/store/store.ts"
-import * as scripts from "#lib/redis/scripts.ts"
-import { InvalidReplyError } from "#lib/shared/errors.ts"
+import * as scripts from "./scripts.ts"
 
 /**
  * Sends one command to Redis and returns its reply. Adapt any client in one line:
@@ -94,4 +93,14 @@ function parseReply(reply: unknown): StoreResult {
   }
 
   return { now, remaining, reset, success: success === 1 }
+}
+
+export class InvalidReplyError extends Error {
+  override readonly name = "InvalidReplyError"
+  readonly reply: unknown
+
+  constructor(reply: unknown) {
+    super("The store returned an unexpected reply to a rate limit script")
+    this.reply = reply
+  }
 }

@@ -1,4 +1,4 @@
-import { positiveInteger } from "#lib/shared/options.ts"
+import { positiveInteger } from "#lib/options/options.ts"
 
 /**
  * Allows `limit` units in each window. Windows start at multiples of `window` since the epoch.

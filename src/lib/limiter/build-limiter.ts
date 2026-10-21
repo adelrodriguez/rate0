@@ -1,11 +1,11 @@
 import type { Algorithm } from "#lib/algorithms/algorithms.ts"
-import type { Identity } from "#lib/limiter/identity.ts"
 import type { Store, StoreResult } from "#lib/store/store.ts"
 import { capacityOf, windowOf } from "#lib/algorithms/algorithms.ts"
-import { blockedCache } from "#lib/limiter/blocked-cache.ts"
-import { keyOf } from "#lib/limiter/identity.ts"
-import { InvalidOptionError, StoreError, StoreTimeoutError } from "#lib/shared/errors.ts"
-import { positiveInteger } from "#lib/shared/options.ts"
+import { InvalidOptionError, positiveInteger } from "#lib/options/options.ts"
+import type { Identity } from "./identity.ts"
+import { blockedCache } from "./blocked-cache.ts"
+import { StoreError, StoreTimeoutError } from "./errors.ts"
+import { keyOf } from "./identity.ts"
 
 const DEFAULT_TIMEOUT = 1000
 

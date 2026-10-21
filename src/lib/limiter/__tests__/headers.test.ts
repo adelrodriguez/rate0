@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
+import { StoreError } from "#lib/limiter/errors.ts"
 import { headers } from "#lib/limiter/headers.ts"
-import { StoreError } from "#lib/shared/errors.ts"
 
 const counts = { limit: 30, remaining: 12, reset: 0, retryAfter: 1_799_001, window: 3_600_000 }
 

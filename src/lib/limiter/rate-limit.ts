@@ -1,6 +1,6 @@
-import type { AllowedResult, LimitResult, Limiter, Remaining } from "#lib/limiter/build-limiter.ts"
-import { internal } from "#lib/limiter/build-limiter.ts"
-import { InvalidOptionError } from "#lib/shared/errors.ts"
+import { InvalidOptionError } from "#lib/options/options.ts"
+import type { AllowedResult, LimitResult, Limiter, Remaining } from "./build-limiter.ts"
+import { internal } from "./build-limiter.ts"
 
 export type RateLimitOptions = {
   /**

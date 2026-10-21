@@ -4,10 +4,11 @@ import type { Identity } from "#lib/limiter/identity.ts"
 import type { Store, StoreRequest } from "#lib/store/store.ts"
 import { fixedWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
 import { buildLimiter } from "#lib/limiter/build-limiter.ts"
+import { StoreError, StoreTimeoutError } from "#lib/limiter/errors.ts"
 import { headers } from "#lib/limiter/headers.ts"
 import { clear, rateLimit, remaining } from "#lib/limiter/rate-limit.ts"
-import { memoryStore } from "#lib/memory/memory-store.ts"
-import { InvalidOptionError, StoreError, StoreTimeoutError } from "#lib/shared/errors.ts"
+import { InvalidOptionError } from "#lib/options/options.ts"
+import { memoryStore } from "#lib/stores/memory/memory-store.ts"
 
 function recordingStore(store: Store = memoryStore()) {
   const requests: StoreRequest[] = []

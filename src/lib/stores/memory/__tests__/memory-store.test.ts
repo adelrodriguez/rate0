@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { fixedWindow, slidingWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
-import { memoryStore } from "#lib/memory/memory-store.ts"
 import { testStore } from "#lib/store/__tests__/conformance.ts"
+import { memoryStore } from "#lib/stores/memory/memory-store.ts"
 
 function clockAt(start: number) {
   const clock = { now: start }

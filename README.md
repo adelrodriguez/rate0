@@ -433,7 +433,7 @@ A store must follow these rules:
 - **A denial changes nothing.**
 - **A cost of 0 reads without writing.**
 - **The store's own clock decides.** `now` is the store's time in epoch milliseconds.
-- **The arithmetic matches the built-in stores.** See `src/lib/memory/memory-store.ts`.
+- **The arithmetic matches the built-in stores.** See `src/lib/stores/memory/memory-store.ts`.
 
 A store that supports only some algorithms declares them, and TypeScript then refuses the others:
 
@@ -445,7 +445,7 @@ Key-value abstractions such as unstorage drivers cannot be stores, because they 
 
 ## Errors
 
-rate0 exports these `Error` subclasses:
+rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, and the rest from `rate0`:
 
 | Error                | Fields            | When                                                                    |
 | -------------------- | ----------------- | ----------------------------------------------------------------------- |

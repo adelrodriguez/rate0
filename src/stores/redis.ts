@@ -1,2 +1,2 @@
-export type { RedisSend, RedisStoreOptions } from "#lib/redis/redis-store.ts"
-export { redisStore } from "#lib/redis/redis-store.ts"
+export type { RedisSend, RedisStoreOptions } from "#lib/stores/redis/redis-store.ts"
+export { InvalidReplyError, redisStore } from "#lib/stores/redis/redis-store.ts"

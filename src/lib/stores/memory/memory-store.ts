@@ -1,6 +1,6 @@
 import type { FixedWindow, SlidingWindow, TokenBucket } from "#lib/algorithms/algorithms.ts"
 import type { Store, StoreResult } from "#lib/store/store.ts"
-import { expiringMap } from "#lib/shared/expiring-map.ts"
+import { expiringMap } from "#lib/expiring-map/expiring-map.ts"
 
 type FixedWindowState = {
   readonly type: "fixedWindow"

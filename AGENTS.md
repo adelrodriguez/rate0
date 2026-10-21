@@ -67,8 +67,15 @@ Packref provides local copies of dependency source code so you can inspect the e
 
 <!-- PACKREF:END -->
 
+## Structure
+
+- `src/lib` holds one folder per domain. Dependencies point one way: `options` and `expiring-map` ← `algorithms` ← `store` (the contract) ← `stores/*` and `limiter`. `oxlint.config.ts` enforces this.
+- A folder imports its own files with `./`, and other folders with `#lib/...`.
+- A new store goes in `src/lib/stores/<name>/`, with its public entry in `src/stores/<name>.ts`, a `./stores/<name>` export in `package.json`, and an entry in `tsdown.config.ts`. The lint rules already cover it.
+- An error class lives with the code that throws it.
+
 ## Tests
 
 - The Redis store tests need a server at `REDIS_URL`, which defaults to `redis://localhost:6379`. Start one with `docker run --rm -p 6379:6379 redis:8`.
-- Run `bun --bun vitest run src/lib/redis` to also test Bun's Redis client.
+- Run `bun --bun vitest run src/lib/stores/redis` to also test Bun's Redis client.
 - Every store runs the shared suite in `src/lib/store/__tests__/conformance.ts`. A new store must pass it.

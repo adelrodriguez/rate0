@@ -12,11 +12,13 @@ export default defineConfig({
   overrides: [
     // Dependencies inside `src/lib` point one way:
     //
-    //   shared <- algorithms <- store <- memory, redis
-    //                                 <- limiter
+    //   options, expiring-map <- algorithms <- store <- stores/*
+    //                                                <- limiter
     //
-    // A limiter knows only the store contract, never a concrete store, and the stores know nothing
-    // of each other or of limiters. Tests may cross these lines, so the rules cover source files only.
+    // A folder imports its own files with `./` and other folders with `#lib/...`, so a rule can ban a
+    // whole folder without banning a folder's own files. A limiter knows only the store contract,
+    // never a concrete store, and a store knows nothing of other stores or of limiters. Tests may
+    // cross these lines, so the rules cover source files only.
     {
       files: ["src/**/*.ts"],
       rules: {
@@ -24,7 +26,7 @@ export default defineConfig({
       },
     },
     {
-      files: ["src/lib/**/*.ts"],
+      files: ["src/lib/options/*.ts", "src/lib/expiring-map/*.ts"],
       rules: {
         "no-restricted-imports": [
           "error",
@@ -34,29 +36,9 @@ export default defineConfig({
                 group: ["#index.ts", "#stores/**"],
                 message: "lib must not import an entry point.",
               },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      files: ["src/lib/shared/*.ts"],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
               {
-                group: [
-                  "#index.ts",
-                  "#stores/**",
-                  "#lib/algorithms/**",
-                  "#lib/store/**",
-                  "#lib/memory/**",
-                  "#lib/redis/**",
-                  "#lib/limiter/**",
-                ],
-                message: "shared must not import other lib folders.",
+                group: ["#lib/**"],
+                message: "options and expiring-map import nothing else in lib.",
               },
             ],
           },
@@ -71,15 +53,12 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: [
-                  "#index.ts",
-                  "#stores/**",
-                  "#lib/store/**",
-                  "#lib/memory/**",
-                  "#lib/redis/**",
-                  "#lib/limiter/**",
-                ],
-                message: "algorithms may import only shared.",
+                group: ["#index.ts", "#stores/**"],
+                message: "lib must not import an entry point.",
+              },
+              {
+                group: ["#lib/**", "!#lib/options/**"],
+                message: "algorithms import only options.",
               },
             ],
           },
@@ -94,14 +73,12 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: [
-                  "#index.ts",
-                  "#stores/**",
-                  "#lib/memory/**",
-                  "#lib/redis/**",
-                  "#lib/limiter/**",
-                ],
-                message: "The store contract must not depend on a store or on limiters.",
+                group: ["#index.ts", "#stores/**"],
+                message: "lib must not import an entry point.",
+              },
+              {
+                group: ["#lib/**", "!#lib/algorithms/**"],
+                message: "The store contract imports only algorithms.",
               },
             ],
           },
@@ -109,31 +86,20 @@ export default defineConfig({
       },
     },
     {
-      files: ["src/lib/memory/*.ts"],
+      files: ["src/lib/stores/*/*.ts"],
       rules: {
         "no-restricted-imports": [
           "error",
           {
             patterns: [
               {
-                group: ["#index.ts", "#stores/**", "#lib/redis/**", "#lib/limiter/**"],
-                message: "A store must not import another store or limiters.",
+                group: ["#index.ts", "#stores/**"],
+                message: "lib must not import an entry point.",
               },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      files: ["src/lib/redis/*.ts"],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
               {
-                group: ["#index.ts", "#stores/**", "#lib/memory/**", "#lib/limiter/**"],
-                message: "A store must not import another store or limiters.",
+                group: ["#lib/stores/**", "#lib/limiter/**"],
+                message:
+                  "A store imports its own files with ./, and never another store or limiters.",
               },
             ],
           },
@@ -148,7 +114,11 @@ export default defineConfig({
           {
             patterns: [
               {
-                group: ["#index.ts", "#stores/**", "#lib/memory/**", "#lib/redis/**"],
+                group: ["#index.ts", "#stores/**"],
+                message: "lib must not import an entry point.",
+              },
+              {
+                group: ["#lib/stores/**"],
                 message: "Limiters know only the store contract, not a concrete store.",
               },
             ],

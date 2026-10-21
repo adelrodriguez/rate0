@@ -1,10 +1,9 @@
 import { Redis } from "ioredis"
 import { afterAll, describe, expect, it } from "vitest"
-import type { RedisSend } from "#lib/redis/redis-store.ts"
+import type { RedisSend } from "#lib/stores/redis/redis-store.ts"
 import { fixedWindow, slidingWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
-import { redisStore } from "#lib/redis/redis-store.ts"
-import { InvalidReplyError } from "#lib/shared/errors.ts"
 import { testStore } from "#lib/store/__tests__/conformance.ts"
+import { InvalidReplyError, redisStore } from "#lib/stores/redis/redis-store.ts"
 
 // Needs a server that speaks the Redis protocol. CI runs this file against Redis and Valkey.
 const url = process.env.REDIS_URL ?? "redis://localhost:6379"
