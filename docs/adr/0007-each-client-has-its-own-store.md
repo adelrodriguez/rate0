@@ -2,7 +2,7 @@
 
 Supersedes [0002](0002-stores-take-a-command-function-not-a-client.md).
 
-Each Redis-protocol client has its own store, and the store takes the client as it is: `redisStore` takes an ioredis or node-redis client, `valkeyStore` an iovalkey client, and `bunStore` a `Bun.RedisClient`. The user writes no adapter. Each store declares only the one method it calls (`call`, `sendCommand`, or `send`), so the package still imports no client's types, and every client fits without a type assertion. All of them adapt their client to one internal `scriptStore`, so they run the same scripts and count the same way.
+Each Redis-protocol client has its own store, and the store takes the client as it is: `redisStore` takes an ioredis or node-redis client, `valkeyStore` an iovalkey client, and `bunRedisStore` a `Bun.RedisClient`. The user writes no adapter. Each store declares only the one method it calls (`call`, `sendCommand`, or `send`), so the package still imports no client's types, and every client fits without a type assertion. All of them adapt their client to one internal `scriptStore`, so they run the same scripts and count the same way.
 
 ## Considered Options
 

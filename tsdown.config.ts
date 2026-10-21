@@ -6,7 +6,7 @@ export default defineConfig({
   dts: true,
   entry: {
     index: "src/index.ts",
-    "stores/bun": "src/stores/bun.ts",
+    "stores/bun-redis": "src/stores/bun-redis.ts",
     "stores/memory": "src/stores/memory.ts",
     "stores/redis": "src/stores/redis.ts",
     "stores/valkey": "src/stores/valkey.ts",
