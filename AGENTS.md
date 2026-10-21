@@ -66,3 +66,9 @@ Packref provides local copies of dependency source code so you can inspect the e
 - Multiple versions of the same package can coexist; check `.packref/packref-lock.json` for the full list
 
 <!-- PACKREF:END -->
+
+## Tests
+
+- The Redis store tests need a server at `REDIS_URL`, which defaults to `redis://localhost:6379`. Start one with `docker run --rm -p 6379:6379 redis:8`.
+- Run `bun --bun vitest run src/lib/redis` to also test Bun's Redis client.
+- Every store runs the shared suite in `src/lib/store/__tests__/conformance.ts`. A new store must pass it.

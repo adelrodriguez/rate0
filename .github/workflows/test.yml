@@ -15,9 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The Redis store tests need a server, so the unit job runs next to Redis.
   unit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    services:
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
+
+    env:
+      REDIS_URL: redis://localhost:6379
 
     steps:
       - name: Checkout code
@@ -37,6 +49,81 @@ jobs:
 
       - name: Run tests
         run: pnpm run test
+
+  # Valkey is a supported server. Run the Redis store tests against it too.
+  valkey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
+
+    env:
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Redis store tests
+        run: pnpm exec vitest run src/lib/redis
+
+  # On Bun, the Redis store tests also run through Bun's own Redis client.
+  bun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
+
+    env:
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+          cache: pnpm
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Redis store tests on Bun
+        run: bun --bun vitest run src/lib/redis
 
   # Vitest needs a newer Node.js version than the `engines.node` floor. Build with the default
   # Node.js version, then run the built package on the exact floor.

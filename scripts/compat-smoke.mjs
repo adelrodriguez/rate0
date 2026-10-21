@@ -11,7 +11,7 @@ import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
 const distDir = resolve(process.argv[2] ?? "dist")
-const entry = resolve(distDir, "index.js")
+const entries = ["index.js", "redis.js"].map((file) => resolve(distDir, file))
 
 function check(condition, message) {
   if (!condition) {
@@ -19,11 +19,14 @@ function check(condition, message) {
   }
 }
 
-const content = await readFile(entry, "utf8")
-check(
-  !/(?:from|import|require)\s*\(?\s*["']node:/.test(content),
-  "the bundle imports no Node.js module"
-)
+const contents = await Promise.all(entries.map((entry) => readFile(entry, "utf8")))
+
+for (const [index, content] of contents.entries()) {
+  check(
+    !/(?:from|import|require)\s*\(?\s*["']node:/.test(content),
+    `${entries[index]} imports no Node.js module`
+  )
+}
 
 if (typeof Array.prototype.toSorted !== "function") {
   throw new Error("This runtime is below the supported floor")
@@ -48,16 +51,30 @@ delete Set.prototype.union
 /**
  * @type {typeof import("../src/index")}
  */
-const library = await import(pathToFileURL(entry).href)
+const library = await import(pathToFileURL(entries[0]).href)
+/**
+ * @type {typeof import("../src/redis")}
+ */
+const redis = await import(pathToFileURL(entries[1]).href)
 
-check(library.greet("Ada") === "Hello, Ada!", "greet returns a greeting")
+const limiter = library.buildLimiter({ store: library.memoryStore() })
+const algorithm = library.fixedWindow({ limit: 1, window: 60_000 })
+const perKey = limiter({ algorithm, name: "key" })
 
-try {
-  library.greet(" ")
-  check(false, "greet throws for a blank name")
-} catch (error) {
-  check(
-    error instanceof library.InvalidNameError && error.value === " ",
-    "InvalidNameError stores the input"
-  )
-}
+const first = await library.rateLimit(perKey, "a")
+const second = await library.rateLimit(perKey, "a")
+
+check(first.success, "a limiter allows the first request")
+check(!second.success, "a limiter denies past its limit")
+
+// A Redis store hashes its scripts with Web Crypto and parses the reply.
+const commands = []
+const store = redis.redisStore({
+  send: (command) => {
+    commands.push(command)
+    return Promise.resolve([1, 0, 60_000, 0])
+  },
+})
+const result = await store.consume({ algorithm, cost: 1, key: "k" })
+
+check(result.success && commands[0] === "EVALSHA", "a Redis store runs its script by hash")
