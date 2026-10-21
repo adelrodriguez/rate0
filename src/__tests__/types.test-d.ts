@@ -24,7 +24,7 @@ type Request = { readonly ip: string }
 const limiter = buildLimiter({ store: memoryStore() })
 const algorithm = fixedWindow({ limit: 10, window: 60_000 })
 const perIp = limiter({ algorithm, identify: (request: Request) => request.ip, name: "ip" })
-const global = limiter({ algorithm, identify: () => "global", name: "global" })
+const global = limiter({ algorithm, identify: () => null, name: "global" })
 const direct = limiter({ algorithm, name: "direct" })
 const request: Request = { ip: "203.0.113.7" }
 
@@ -55,6 +55,13 @@ describe("limiter", () => {
   it("accepts any input when identify ignores it", () => {
     expectTypeOf(global).toEqualTypeOf<Limiter<unknown>>()
     void rateLimit([perIp, global], request)
+  })
+
+  it("accepts null as the global identity", () => {
+    const daily = limiter({ algorithm, identify: () => null, name: "daily" })
+
+    expectTypeOf(daily).toEqualTypeOf<Limiter<unknown>>()
+    void rateLimit(direct, null)
   })
 
   it("requires identify to return an identity", () => {
