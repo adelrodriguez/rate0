@@ -67,6 +67,25 @@ describe("buildLimiter", () => {
     expect(keys).toContain("a:b|c")
   })
 
+  it("counts every null identity against one global key", async () => {
+    const { requests, store } = recordingStore()
+    const limiter = buildLimiter({ store })
+    const short = limiter({ algorithm: threePerMinute, name: "a" })
+    const long = limiter({ algorithm: threePerMinute, name: "a:b" })
+    const daily = limiter({ algorithm: threePerMinute, identify: () => null, name: "daily" })
+
+    await rateLimit(long, null)
+    await rateLimit(short, "b")
+    await rateLimit(long, "")
+    await rateLimit(long, "%00")
+    await rateLimit(daily, "anything")
+    await rateLimit(daily, "else")
+
+    const keys = requests.map((request) => request.key)
+    expect(new Set(keys.slice(0, 4)).size).toBe(4)
+    expect(keys[4]).toBe(keys[5])
+  })
+
   it("passes the input to identify", async () => {
     const { requests, store } = recordingStore()
     const limiter = buildLimiter({ store })({

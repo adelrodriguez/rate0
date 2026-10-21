@@ -21,7 +21,7 @@ The rule that decides whether a request fits: fixed window, sliding window, or t
 _Avoid_: Strategy, limiter (for the algorithm)
 
 **Identity**:
-The value a limiter counts against, such as an IP address, a device, a user, or one global key. It can have several parts.
+The value a limiter counts against, such as an IP address, a device, or a user. It can have several parts. The global identity, `null`, gives every request that uses it one shared count.
 _Avoid_: Key (the key is the identity with the limiter's name in front), identifier, characteristic
 
 **Cost**:

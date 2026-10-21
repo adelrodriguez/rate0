@@ -125,7 +125,7 @@ import type { Context } from "hono"
 const perDevice = limiter({
   name: "suggestions:device",
   algorithm: slidingWindow({ limit: 10, window: ms("1h") }),
-  identify: (c: Context) => c.req.header("x-device-id") ?? "missing",
+  identify: (c: Context) => c.req.header("x-device-id") ?? null,
 })
 
 await rateLimit(perDevice, c) // c must be a Context
@@ -145,17 +145,17 @@ const perKey = limiter({ name: "api:key", algorithm: fixedWindow({ limit: 100, w
 await rateLimit(perKey, apiKey)
 ```
 
-A global limit counts every request against one identity:
+`null` is the global identity. Every request that returns `null` shares one count, so a global limit returns it for every request:
 
 ```typescript
 const daily = limiter({
   name: "suggestions:daily",
   algorithm: fixedWindow({ limit: 2_000, window: ms("1d") }),
-  identify: () => "global",
+  identify: () => null,
 })
 ```
 
-`identify` must always return an identity. There is no way to skip a limiter, because a client could then avoid a limit by leaving out a header. Return a fixed value such as `"missing"` instead, so that every request without the header shares one count.
+`identify` must always return an identity. There is no way to skip a limiter, because a client could then avoid a limit by leaving out a header. Return `null` instead, as `perDevice` does above, so that every request without the header shares the global count. The global identity never shares a count with a string or a tuple.
 
 `identify` can be async.
 
