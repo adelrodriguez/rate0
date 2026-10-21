@@ -39,7 +39,7 @@ You define limiters once and run them with plain functions. rate0 has no framewo
 ## Features
 
 - **Atomic:** Each check runs as one indivisible step in the store, such as a Lua script in Redis.
-- **Three algorithms:** Fixed window, sliding window, and token bucket, as in `@upstash/ratelimit`. A denied request spends nothing, the cost is checked before any units are spent, and a denial reports the exact time the request can succeed.
+- **Three algorithms:** Fixed window, sliding window, and token bucket. A denied request spends nothing, the cost is checked before any units are spent, and a denial reports the exact time the request can succeed.
 - **Your Redis client as it is:** Pass an ioredis, node-redis, iovalkey, or Bun client straight to its store. No adapter, no type assertions.
 - **Safe on failure:** When the store fails, the result is never a success, so a spending cap stays a cap.
 - **One clock:** Windows follow the store's clock, so instances with drifting clocks agree.
@@ -464,15 +464,13 @@ rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/st
 
 ## Compared with other libraries
 
-|                         | rate0                        | @upstash/ratelimit                       | hono-rate-limiter        | rate-limiter-flexible |
-| ----------------------- | ---------------------------- | ---------------------------------------- | ------------------------ | --------------------- |
-| Stores                  | Redis, Valkey, Bun, memory   | Upstash Redis over HTTP                  | Memory, Redis, unstorage | Many                  |
-| Algorithms              | Fixed, sliding, bucket       | Fixed, sliding, bucket                   | Fixed                    | Fixed                 |
-| Counts across instances | Yes                          | Yes                                      | Not with memory          | Yes                   |
-| Atomic in every store   | Yes                          | Yes                                      | Not with unstorage       | Yes                   |
-| On store failure        | A store error, never success | Allows after a timeout, throws otherwise |                          |                       |
-| Denied requests spend   | Nothing                      | Units, in fixed and sliding windows      |                          |                       |
-| Framework integrations  | None, by design              | None                                     | Hono                     | None                  |
+|                         | rate0                      | hono-rate-limiter        | rate-limiter-flexible |
+| ----------------------- | -------------------------- | ------------------------ | --------------------- |
+| Stores                  | Redis, Valkey, Bun, memory | Memory, Redis, unstorage | Many                  |
+| Algorithms              | Fixed, sliding, bucket     | Fixed                    | Fixed                 |
+| Counts across instances | Yes                        | Not with memory          | Yes                   |
+| Atomic in every store   | Yes                        | Not with unstorage       | Yes                   |
+| Framework integrations  | None, by design            | Hono                     | None                  |
 
 ## License
 
