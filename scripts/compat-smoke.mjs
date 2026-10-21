@@ -11,9 +11,13 @@ import { resolve } from "node:path"
 import { pathToFileURL } from "node:url"
 
 const distDir = resolve(process.argv[2] ?? "dist")
-const entries = ["index.js", "stores/memory.js", "stores/redis.js"].map((file) =>
-  resolve(distDir, file)
-)
+const entries = [
+  "index.js",
+  "stores/memory.js",
+  "stores/redis.js",
+  "stores/valkey.js",
+  "stores/bun.js",
+].map((file) => resolve(distDir, file))
 
 function check(condition, message) {
   if (!condition) {
@@ -76,7 +80,7 @@ check(!second.success, "a limiter denies past its limit")
 // A Redis store hashes its scripts with Web Crypto and parses the reply.
 const commands = []
 const store = redis.redisStore({
-  send: (command) => {
+  call: (command) => {
     commands.push(command)
     return Promise.resolve([1, 0, 60_000, 0])
   },
