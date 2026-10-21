@@ -163,11 +163,11 @@ const daily = limiter({
 
 The `name` labels results and headers, and it starts every key in the store, so limiters that share a store never share counts. Give each limiter a unique name of printable ASCII characters.
 
-| Setting   | Type                    | Default     | Description                                                                      |
-| --------- | ----------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `timeout` | `number`                | `1000`      | Milliseconds to wait for the store before the result is a store error.           |
-| `cache`   | `boolean`               | `true`      | Remember denials in this process until they reset, and skip the store meanwhile. |
-| `mode`    | `"enforce" \| "dryRun"` | `"enforce"` | See [dry-run mode](#try-a-limit-in-dry-run-mode).                                |
+| Setting   | Type                    | Default     | Description                                                                                              |
+| --------- | ----------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `timeout` | `number`                | `1000`      | Milliseconds to wait for the store before the result is a store error.                                   |
+| `cache`   | `boolean`               | `true`      | Remember denials in this process until they reset, and skip the store when the same cost is asked again. |
+| `mode`    | `"enforce" \| "dryRun"` | `"enforce"` | See [dry-run mode](#try-a-limit-in-dry-run-mode).                                                        |
 
 Pass a setting to `buildLimiter` to apply it to every limiter, or to one limiter to override it:
 
@@ -206,7 +206,7 @@ result.name // the limiter that decided
 result.results // every limiter's own result, in order
 ```
 
-When every limiter allows the request, the result is the allowed result with the fewest units remaining. `rateLimit` checks the cost against every limiter before it spends anything.
+When every limiter allows the request, the result is the allowed result with the fewest units remaining, taken from an enforced limiter when there is one. `rateLimit` checks the cost against every limiter before it spends anything.
 
 Limiters that ran before a denial have already spent. Put the broadest limit, such as a global daily total, last: then only requests that pass the narrower limits spend from it.
 
@@ -237,6 +237,8 @@ if (result.reason !== "storeError") {
   result.retryAfter // milliseconds until reset, measured on the store's clock
   result.window // the period the limit covers, in milliseconds
 }
+
+if (result.success) result.mode // "enforce" or "dryRun"
 ```
 
 | `success` | `reason`       | Meaning                                                                   |
@@ -266,7 +268,7 @@ headers(result)
 // }
 ```
 
-A store error and a dry run produce no headers.
+A store error and a dry-run limiter's result produce no headers.
 
 ## Write middleware
 
@@ -313,6 +315,8 @@ export function withRateLimit(limiters: [Limiter<Request>, ...Array<Limiter<Requ
 ## Handle store errors
 
 When the store fails or does not answer within `timeout`, `rateLimit` returns a store error: `success` is `false`, and `error` is a `StoreError` with the original error as its `cause`. Code that only checks `success` refuses the request. This keeps a limit that protects spending, such as calls to a paid API, in force during an outage.
+
+A store error does not mean nothing was counted. A command that timed out can still complete in the store, so the request may have spent units.
 
 To let requests through on some routes instead, decide in your middleware:
 
@@ -370,7 +374,7 @@ for (const each of result.results) {
 }
 ```
 
-A dry-run limiter never stops a chain of limiters, does not use the denial cache, and produces no headers.
+A dry-run limiter never stops a chain of limiters, never decides a chain that has an enforced limiter, does not use the denial cache, and produces no headers.
 
 ## Stores
 

@@ -7,11 +7,13 @@ import type {
   Limiter,
   LimitResult,
   LimitResults,
+  Mode,
   Store,
   StoreError,
 } from "#index.ts"
-import type { RedisSend } from "#redis.ts"
-import { buildLimiter, fixedWindow, memoryStore, rateLimit, tokenBucket } from "#index.ts"
+import type { RedisSend } from "#stores/redis.ts"
+import { buildLimiter, fixedWindow, rateLimit, tokenBucket } from "#index.ts"
+import { memoryStore } from "#stores/memory.ts"
 
 type Request = { readonly ip: string }
 
@@ -107,6 +109,15 @@ describe("LimitResult", () => {
     const result = await rateLimit(perIp, request)
 
     if (result.success) expectTypeOf(result.reason).toEqualTypeOf<"store" | "dryRun">()
+  })
+
+  it("carries the mode only on an allowed result", async () => {
+    const result = await rateLimit(perIp, request)
+
+    // @ts-expect-error -- a denial is always enforced, and a store error has no mode.
+    void result.mode
+
+    if (result.success) expectTypeOf(result.mode).toEqualTypeOf<Mode>()
   })
 })
 

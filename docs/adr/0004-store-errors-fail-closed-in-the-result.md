@@ -1,6 +1,6 @@
 # Store errors fail closed in the result
 
-When the store fails or times out, `rateLimit` does not throw and does not consult a policy: it returns a store error, `{ success: false, reason: "storeError", error }`, with no counts. Code that only checks `success` therefore refuses the request, which protects spending caps on paid endpoints. Applications that prefer to allow the request or to fall back to a local limiter do so in their own middleware, which already decides the response.
+When the store fails or times out, `rateLimit` does not throw and does not consult a policy: it returns a store error, `{ success: false, reason: "storeError", error }`, with no counts. A store error does not undo the command: one that timed out can still complete, so the request may have been counted. Code that only checks `success` therefore refuses the request, which protects spending caps on paid endpoints. Applications that prefer to allow the request or to fall back to a local limiter do so in their own middleware, which already decides the response.
 
 ## Considered Options
 

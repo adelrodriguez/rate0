@@ -19,7 +19,8 @@ type Limiters<Input> = readonly [Limiter<Input>, ...Array<Limiter<Input>>]
 /**
  * Spends `cost` units. With several limiters, it runs them in order and stops at the first denial
  * or store error. The result is that denial or store error, or, when every limiter allows the
- * request, the allowed result with the fewest units remaining.
+ * request, the allowed result with the fewest units remaining. An enforced limiter's result decides
+ * before a dry-run limiter's, so a trial limit never replaces the headers of an enforced one.
  *
  * It does not reject when the store fails: the result is a store error, which is never a success.
  */
@@ -60,7 +61,12 @@ export async function rateLimit<Input>(
     results.push(result)
 
     if (!result.success) return { ...result, results }
-    if (result.remaining < tightest.remaining) tightest = result
+
+    const tighter =
+      result.mode === tightest.mode
+        ? result.remaining < tightest.remaining
+        : result.mode === "enforce"
+    if (tighter) tightest = result
   }
 
   return { ...tightest, results }

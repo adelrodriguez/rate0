@@ -42,7 +42,7 @@ A result in which the store or the cache refused the request.
 _Avoid_: Block, rejection
 
 **Store error**:
-A result in which the store failed or did not answer in time, so nothing was counted. A store error is never a success.
+A result in which the store failed or did not answer in time. A store error is never a success, but the request may have been counted, because a command that timed out can still complete.
 _Avoid_: Timeout result, error decision
 
 **Dry run**:

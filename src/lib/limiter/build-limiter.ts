@@ -67,6 +67,10 @@ export type AllowedResult = Counts & {
    * `"store"`: the store allowed the request. `"dryRun"`: the store denied it, in dry-run mode.
    */
   readonly reason: "store" | "dryRun"
+  /**
+   * The limiter's mode. A dry-run limiter allows every request it counts.
+   */
+  readonly mode: Mode
 }
 
 export type DeniedResult = Counts & {
@@ -79,7 +83,8 @@ export type DeniedResult = Counts & {
 }
 
 /**
- * The store failed or timed out, so nothing was counted.
+ * The store failed or did not answer in time. A store error is never a success, but the request may
+ * still have been counted: a command that timed out can complete in the store, then or later.
  */
 export type StoreErrorResult = {
   readonly name: string
@@ -187,8 +192,13 @@ export function buildLimiter<Supported extends Algorithm>({
             return { error: new StoreError(error), name, reason: "storeError", success: false }
           }
 
-          if (result.success) return { ...counts(result), name, reason: "store", success: true }
-          if (mode === "dryRun") return { ...counts(result), name, reason: "dryRun", success: true }
+          if (result.success) {
+            return { ...counts(result), mode, name, reason: "store", success: true }
+          }
+
+          if (mode === "dryRun") {
+            return { ...counts(result), mode, name, reason: "dryRun", success: true }
+          }
 
           blocks?.block(key, cost, result)
 

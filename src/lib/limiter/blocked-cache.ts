@@ -12,8 +12,8 @@ type Block = {
 }
 
 // Remembers denials in this process, so a denied identity does not reach the store again until its
-// reset. A denial for one cost also covers every larger cost, because a larger request cannot
-// succeed earlier. The block lasts as long as the store said to wait, measured on the local clock,
+// reset. A block answers only the cost it was denied for: a larger cost is denied too, but its reset
+// is later and depends on the algorithm, so the store must say when. The block lasts as long as the store said to wait, measured on the local clock,
 // so a local clock that differs from the store's clock does not change its length.
 export function blockedCache() {
   const blocks = expiringMap<Block>(Date.now)
@@ -30,7 +30,7 @@ export function blockedCache() {
     lookup(key: string, cost: number) {
       const block = blocks.get(key)
 
-      if (block === undefined || cost < block.cost) return
+      if (block === undefined || cost !== block.cost) return
 
       return {
         remaining: block.remaining,

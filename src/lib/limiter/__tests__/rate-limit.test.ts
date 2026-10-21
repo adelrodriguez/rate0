@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest"
+import type { Limiter } from "#lib/limiter/build-limiter.ts"
 import type { Identity } from "#lib/limiter/identity.ts"
 import type { Store, StoreRequest } from "#lib/store/store.ts"
 import { fixedWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
 import { buildLimiter } from "#lib/limiter/build-limiter.ts"
+import { headers } from "#lib/limiter/headers.ts"
 import { clear, rateLimit, remaining } from "#lib/limiter/rate-limit.ts"
 import { memoryStore } from "#lib/memory/memory-store.ts"
 import { InvalidOptionError, StoreError, StoreTimeoutError } from "#lib/shared/errors.ts"
@@ -32,6 +34,8 @@ const silentStore: Store = {
   clear: () => Promise.withResolvers<never>().promise,
   consume: () => Promise.withResolvers<never>().promise,
 }
+
+type Chain = readonly [Limiter, Limiter]
 
 const threePerMinute = fixedWindow({ limit: 3, window: 60_000 })
 
@@ -147,8 +151,8 @@ describe("rateLimit", () => {
       expect(requests).toHaveLength(2)
     })
 
-    it("asks the store again for a smaller cost than the cached denial", async () => {
-      const { requests, store } = recordingStore()
+    it("asks the store for any other cost, which reports its own reset", async () => {
+      const { requests, store } = recordingStore(memoryStore({ clock: () => 0 }))
       const limiter = buildLimiter({ store })({
         algorithm: tokenBucket({ capacity: 5, interval: 60_000, refillRate: 1 }),
         name: "x",
@@ -156,12 +160,18 @@ describe("rateLimit", () => {
       await rateLimit(limiter, "k", { cost: 3 })
       await rateLimit(limiter, "k", { cost: 3 })
 
-      expect(await rateLimit(limiter, "k", { cost: 4 })).toMatchObject({ reason: "cache" })
+      expect(await rateLimit(limiter, "k", { cost: 3 })).toMatchObject({ reason: "cache" })
+      expect(await rateLimit(limiter, "k", { cost: 4 })).toMatchObject({
+        reason: "store",
+        reset: 120_000,
+        retryAfter: 120_000,
+        success: false,
+      })
       expect(await rateLimit(limiter, "k", { cost: 2 })).toMatchObject({
         reason: "store",
         success: true,
       })
-      expect(requests).toHaveLength(3)
+      expect(requests).toHaveLength(4)
     })
 
     it("asks the store every time when the cache is off", async () => {
@@ -193,6 +203,20 @@ describe("rateLimit", () => {
         success: true,
       })
       expect(await rateLimit(limiter, "k")).toMatchObject({ reason: "dryRun", success: true })
+    })
+
+    it("marks every result with the mode, so headers can leave them out", async () => {
+      const limiter = buildLimiter({ store: memoryStore() })({
+        algorithm: threePerMinute,
+        mode: "dryRun",
+        name: "x",
+      })
+
+      expect(await rateLimit(limiter, "k")).toMatchObject({
+        mode: "dryRun",
+        reason: "store",
+        success: true,
+      })
     })
   })
 
@@ -271,6 +295,28 @@ describe("rateLimit", () => {
       expect(result.success).toBe(true)
       expect(result.results.map((each) => each.reason)).toEqual(["dryRun", "store"])
     })
+
+    it.each([
+      ["before", (watched: Limiter, enforced: Limiter): Chain => [watched, enforced]],
+      ["after", (watched: Limiter, enforced: Limiter): Chain => [enforced, watched]],
+    ])(
+      "decides by an enforced limiter when a spent dry-run limiter runs %s it",
+      async (_order, chain) => {
+        const limiter = buildLimiter({ store: memoryStore({ clock: () => 0 }) })
+        const watched = limiter({
+          algorithm: fixedWindow({ limit: 1, window: 60_000 }),
+          mode: "dryRun",
+          name: "watched",
+        })
+        const enforced = limiter({ algorithm: threePerMinute, name: "enforced" })
+        await rateLimit(watched, "k")
+
+        const result = await rateLimit(chain(watched, enforced), "k")
+
+        expect(result).toMatchObject({ mode: "enforce", name: "enforced", remaining: 2 })
+        expect(headers(result)).toHaveProperty("RateLimit", '"enforced";r=2;t=60')
+      }
+    )
 
     it("stops at a store error", async () => {
       const healthy = buildLimiter({ store: memoryStore() })({
