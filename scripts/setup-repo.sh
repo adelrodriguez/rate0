@@ -27,7 +27,7 @@ ruleset='{
           { "context": "compat", "integration_id": 15368 },
           { "context": "redis-store", "integration_id": 15368 },
           { "context": "valkey-store", "integration_id": 15368 },
-          { "context": "bun-store", "integration_id": 15368 },
+          { "context": "bun-redis-store", "integration_id": 15368 },
           { "context": "build", "integration_id": 15368 }
         ]
       }

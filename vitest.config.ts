@@ -3,8 +3,8 @@ import { defineConfig } from "vitest/config"
 
 const scriptTests = "src/lib/stores/redis/__tests__/script-store.test.ts"
 
-// The unit tests need no server. Each store project needs its server at REDIS_URL, and `bun-store`
-// also needs Bun: `bun --bun vitest run --project bun-store`.
+// The unit tests need no server. Each store project needs its server at REDIS_URL, and `bun-redis-store`
+// also needs Bun: `bun --bun vitest run --project bun-redis-store`.
 export default defineConfig({
   plugins: [Macros.vite()],
   test: {
@@ -37,8 +37,8 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          include: ["src/lib/stores/redis/__tests__/bun-store.test.ts"],
-          name: "bun-store",
+          include: ["src/lib/stores/redis/__tests__/bun-redis-store.test.ts"],
+          name: "bun-redis-store",
         },
       },
     ],

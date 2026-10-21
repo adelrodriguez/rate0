@@ -12,8 +12,8 @@ const exportPaths = [
   packageJson.exports["."].import,
   packageJson.exports["./stores/memory"].import,
   packageJson.exports["./stores/memory"].types,
-  packageJson.exports["./stores/bun"].import,
-  packageJson.exports["./stores/bun"].types,
+  packageJson.exports["./stores/bun-redis"].import,
+  packageJson.exports["./stores/bun-redis"].types,
   packageJson.exports["./stores/redis"].import,
   packageJson.exports["./stores/redis"].types,
   packageJson.exports["./stores/valkey"].import,
@@ -53,7 +53,7 @@ try {
 
 import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "rate0"
 import { memoryStore } from "rate0/stores/memory"
-import { bunStore } from "rate0/stores/bun"
+import { bunRedisStore } from "rate0/stores/bun-redis"
 import { redisStore } from "rate0/stores/redis"
 import { valkeyStore } from "rate0/stores/valkey"
 
@@ -63,7 +63,7 @@ const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), n
 assert.equal((await rateLimit(perKey, "a")).success, true)
 assert.equal((await rateLimit(perKey, "a")).success, false)
 assert.throws(() => fixedWindow({ limit: 0, window: 1 }), InvalidOptionError)
-assert.equal(typeof bunStore, "function")
+assert.equal(typeof bunRedisStore, "function")
 assert.equal(typeof redisStore, "function")
 assert.equal(typeof valkeyStore, "function")
 `

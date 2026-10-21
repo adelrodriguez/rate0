@@ -16,7 +16,7 @@ const entries = [
   "stores/memory.js",
   "stores/redis.js",
   "stores/valkey.js",
-  "stores/bun.js",
+  "stores/bun-redis.js",
 ].map((file) => resolve(distDir, file))
 
 function check(condition, message) {

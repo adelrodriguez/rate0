@@ -394,8 +394,8 @@ import { valkeyStore } from "rate0/stores/valkey"
 valkeyStore(valkey)
 
 // Bun's own client
-import { bunStore } from "rate0/stores/bun"
-bunStore(new Bun.RedisClient(process.env.REDIS_URL))
+import { bunRedisStore } from "rate0/stores/bun-redis"
+bunRedisStore(new Bun.RedisClient(process.env.REDIS_URL))
 ```
 
 The stores work with Redis 7 or later and Valkey 7.2 or later, on any server that speaks the Redis protocol and runs Lua scripts. They run the same scripts, so they count the same way.
@@ -451,7 +451,7 @@ Key-value abstractions such as unstorage drivers cannot be stores, because they 
 
 ## Errors
 
-rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, `rate0/stores/valkey`, and `rate0/stores/bun`, and the rest from `rate0`:
+rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, `rate0/stores/valkey`, and `rate0/stores/bun-redis`, and the rest from `rate0`:
 
 | Error                | Fields            | When                                                                    |
 | -------------------- | ----------------- | ----------------------------------------------------------------------- |

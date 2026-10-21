@@ -12,6 +12,6 @@ export type BunRedisClient = {
  * Counts in Redis or Valkey through Bun's own Redis client. Each check runs one Lua script, so it
  * is atomic across all instances that share the server.
  */
-export function bunStore(client: BunRedisClient): Store {
+export function bunRedisStore(client: BunRedisClient): Store {
   return scriptStore((command, args) => client.send(command, args))
 }

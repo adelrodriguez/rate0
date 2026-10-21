@@ -14,7 +14,7 @@ import type {
   StoreError,
 } from "#index.ts"
 import { buildLimiter, fixedWindow, rateLimit, tokenBucket } from "#index.ts"
-import { bunStore } from "#stores/bun.ts"
+import { bunRedisStore } from "#stores/bun-redis.ts"
 import { memoryStore } from "#stores/memory.ts"
 import { redisStore } from "#stores/redis.ts"
 import { valkeyStore } from "#stores/valkey.ts"
@@ -129,14 +129,14 @@ describe("client stores", () => {
     expectTypeOf(redisStore(ioredis)).toEqualTypeOf<Store>()
     expectTypeOf(redisStore(nodeRedis)).toEqualTypeOf<Store>()
     expectTypeOf(valkeyStore(iovalkey)).toEqualTypeOf<Store>()
-    expectTypeOf(bunStore(bun)).toEqualTypeOf<Store>()
+    expectTypeOf(bunRedisStore(bun)).toEqualTypeOf<Store>()
   })
 
   it("reject a client they cannot send commands through", () => {
     // @ts-expect-error -- Bun's client sends with `send`, which the Redis store does not use.
     void redisStore(bun)
     // @ts-expect-error -- node-redis sends with `sendCommand`, which the Bun store does not use.
-    void bunStore(nodeRedis)
+    void bunRedisStore(nodeRedis)
   })
 })
 
