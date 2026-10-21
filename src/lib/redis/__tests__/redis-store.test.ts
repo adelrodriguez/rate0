@@ -8,6 +8,7 @@ import { testStore } from "#lib/store/__tests__/conformance.ts"
 
 // Needs a server that speaks the Redis protocol. CI runs this file against Redis and Valkey.
 const url = process.env.REDIS_URL ?? "redis://localhost:6379"
+const week = 7 * 24 * 60 * 60 * 1000
 
 type Client = { readonly name: string; readonly send: RedisSend; readonly close: () => unknown }
 
@@ -58,6 +59,23 @@ describe.each(clients)("redisStore with $name", ({ send }) => {
     })
   })
 
+  it("runs a loaded script by its hash alone", async () => {
+    const commands: string[] = []
+    const store = redisStore({
+      send: (command, args) => {
+        commands.push(command)
+        return send(command, args)
+      },
+    })
+    const algorithm = fixedWindow({ limit: 5, window: 2000 })
+    await store.consume({ algorithm, cost: 1, key: "test:hash" })
+    commands.length = 0
+
+    await store.consume({ algorithm, cost: 1, key: "test:hash" })
+
+    expect(commands).toEqual(["EVALSHA"])
+  })
+
   it.each([
     fixedWindow({ limit: 5, window: 2000 }),
     slidingWindow({ limit: 5, window: 2000 }),
@@ -71,6 +89,21 @@ describe.each(clients)("redisStore with $name", ({ send }) => {
 
     expect(ttl).toBeGreaterThan(0)
     expect(ttl).toBeLessThanOrEqual(4000)
+  })
+
+  it.each([
+    fixedWindow({ limit: 5, window: week }),
+    slidingWindow({ limit: 5, window: week }),
+    tokenBucket({ capacity: 5, interval: week, refillRate: 1 }),
+  ])("expires $type state with a one-week window", async (algorithm) => {
+    const store = redisStore({ send })
+    const key = `test:${crypto.randomUUID()}`
+    await store.consume({ algorithm, cost: 1, key })
+
+    const ttl = await send("PTTL", [key])
+
+    expect(ttl).toBeGreaterThan(0)
+    expect(ttl).toBeLessThanOrEqual(2 * week)
   })
 
   it("rejects a reply it does not recognize", async () => {

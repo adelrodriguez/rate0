@@ -99,6 +99,28 @@ export function testStore(createStore: () => Store) {
       expect(second).toMatchObject({ remaining: 3, success: true })
     })
 
+    it("reads the same remaining units and reset as the request before it", async () => {
+      const store = createStore()
+      const key = await freshKey(store, algorithm)
+
+      const spent = await store.consume({ algorithm, cost: 2, key })
+      const read = await store.consume({ algorithm, cost: 0, key })
+
+      expect(read).toMatchObject({ remaining: spent.remaining, reset: spent.reset })
+    })
+
+    it("reads the units that came back after a reset", async () => {
+      const store = createStore()
+      const key = await freshKey(store, algorithm)
+
+      await store.consume({ algorithm, cost: 5, key })
+      const denied = await store.consume({ algorithm, cost: 1, key })
+      await untilReset(denied)
+      const read = await store.consume({ algorithm, cost: 0, key })
+
+      expect(read.remaining).toBeGreaterThanOrEqual(1)
+    })
+
     it("allows a denied request again at its reset", async () => {
       const store = createStore()
       const key = await freshKey(store, algorithm)
