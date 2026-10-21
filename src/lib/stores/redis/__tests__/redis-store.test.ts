@@ -3,11 +3,18 @@ import { afterAll, describe, expect, it } from "vitest"
 import type { RedisSend } from "#lib/stores/redis/redis-store.ts"
 import { fixedWindow, slidingWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
 import { testStore } from "#lib/store/__tests__/conformance.ts"
+import { memoryStore } from "#lib/stores/memory/memory-store.ts"
 import { InvalidReplyError, redisStore } from "#lib/stores/redis/redis-store.ts"
 
 // Needs a server that speaks the Redis protocol. CI runs this file against Redis and Valkey.
 const url = process.env.REDIS_URL ?? "redis://localhost:6379"
 const week = 7 * 24 * 60 * 60 * 1000
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 
 type Client = { readonly name: string; readonly send: RedisSend; readonly close: () => unknown }
 
@@ -45,6 +52,33 @@ afterAll(async () => {
 
 describe.each(clients)("redisStore with $name", ({ send }) => {
   testStore(() => redisStore({ send }))
+
+  // Runs the same requests against Redis and the memory store, with the memory store's clock set to
+  // the time Redis read. The scripts must then return exactly what the memory store returns, which
+  // checks the Lua arithmetic at real timestamps, across window boundaries, and for every cost.
+  it.each([
+    fixedWindow({ limit: 5, window: 100 }),
+    slidingWindow({ limit: 5, window: 100 }),
+    tokenBucket({ capacity: 5, interval: 100, refillRate: 2 }),
+  ])("returns what the memory store returns for $type", async (algorithm) => {
+    const redis = redisStore({ send })
+    let now = 0
+    const memory = memoryStore({ clock: () => now })
+    const key = `test:${crypto.randomUUID()}`
+
+    for (let step = 0; step < 60; step += 1) {
+      const cost = (step * 7) % 6
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Each request must see the state the one before it left.
+      const expected = await redis.consume({ algorithm, cost, key })
+      now = expected.now
+
+      // oxlint-disable-next-line eslint/no-await-in-loop -- As above.
+      expect(await memory.consume({ algorithm, cost, key })).toEqual(expected)
+
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Spreads the requests over several windows.
+      await sleep((step * 13) % 40)
+    }
+  })
 
   it("reloads its scripts after the server forgets them", async () => {
     const store = redisStore({ send })
