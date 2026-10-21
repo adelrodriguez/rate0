@@ -1,0 +1,66 @@
+{
+  "name": "rate0",
+  "version": "0.0.0",
+  "description": "Atomic rate limiting for Redis and other stores",
+  "keywords": [],
+  "homepage": "https://github.com/adelrodriguez/rate0#readme",
+  "bugs": {
+    "url": "https://github.com/adelrodriguez/rate0/issues"
+  },
+  "license": "MIT",
+  "author": "Adel Rodríguez",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adelrodriguez/rate0.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "imports": {
+    "#*": "./src/*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "analyze": "adamantite analyze",
+    "build": "tsdown",
+    "build:debug": "tsdown --no-minify --sourcemap",
+    "build:verify": "pnpm run build && node scripts/verify-build.ts",
+    "bump:deps": "pnpm update --interactive",
+    "check": "adamantite check",
+    "dev": "tsdown --no-minify --sourcemap --watch",
+    "fix": "adamantite fix",
+    "release": "changeset publish",
+    "test": "vitest run",
+    "test:compat": "pnpm run build && node scripts/compat-smoke.mjs dist",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "version": "changeset version && pnpm run fix"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.3",
+    "@types/node": "24.19.1",
+    "@vitest/coverage-v8": "5.0.3",
+    "adamantite": "0.43.0",
+    "knip": "6.40.0",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
+    "oxlint-tsgolint": "7.0.2003",
+    "tsdown": "0.23.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@12.9.1"
+}
