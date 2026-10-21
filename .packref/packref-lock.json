@@ -21,6 +21,18 @@
       },
       "tracking": "dependency",
       "version": "0.23.0"
+    },
+    {
+      "name": "upstash/ratelimit-js",
+      "registry": "github",
+      "source": {
+        "host": "github.com",
+        "requestedRef": "v2.2.0",
+        "type": "repository",
+        "url": "https://github.com/upstash/ratelimit-js"
+      },
+      "tracking": "manual",
+      "version": "fccd840d6e0f893f50bc677107fba4d913a414e3"
     }
   ]
 }

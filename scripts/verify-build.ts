@@ -6,7 +6,15 @@ import packageJson from "../package.json" with { type: "json" }
 
 const packageRoot = join(import.meta.dirname, "..")
 const temporaryDirectory = mkdtempSync(join(tmpdir(), "rate0-build-"))
-const exportPaths = [packageJson.module, packageJson.types, packageJson.exports["."].import]
+const exportPaths = [
+  packageJson.module,
+  packageJson.types,
+  packageJson.exports["."].import,
+  packageJson.exports["./stores/memory"].import,
+  packageJson.exports["./stores/memory"].types,
+  packageJson.exports["./stores/redis"].import,
+  packageJson.exports["./stores/redis"].types,
+]
 
 function run(command: string, arguments_: string[], cwd: string) {
   execFileSync(command, arguments_, { cwd, stdio: "inherit" })
@@ -39,25 +47,42 @@ try {
     join(temporaryDirectory, "runtime.mjs"),
     `import assert from "node:assert/strict"
 
-import { greet, InvalidNameError } from "rate0"
+import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "rate0"
+import { memoryStore } from "rate0/stores/memory"
+import { redisStore } from "rate0/stores/redis"
 
-assert.equal(greet("Ada"), "Hello, Ada!")
-assert.throws(() => greet(" "), InvalidNameError)
+const limiter = buildLimiter({ store: memoryStore() })
+const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), name: "key" })
+
+assert.equal((await rateLimit(perKey, "a")).success, true)
+assert.equal((await rateLimit(perKey, "a")).success, false)
+assert.throws(() => fixedWindow({ limit: 0, window: 1 }), InvalidOptionError)
+assert.equal(typeof redisStore, "function")
 `
   )
   run(process.execPath, ["runtime.mjs"], temporaryDirectory)
 
   writeFileSync(
     join(temporaryDirectory, "consumer.ts"),
-    `import { greet, InvalidNameError } from "rate0"
+    `import { buildLimiter, fixedWindow, rateLimit } from "rate0"
+import type { LimitResult } from "rate0"
+import { memoryStore } from "rate0/stores/memory"
+import { redisStore } from "rate0/stores/redis"
+import type { RedisSend } from "rate0/stores/redis"
 
-const greeting: \`Hello, \${string}!\` = greet("Ada")
-const error: InvalidNameError = new InvalidNameError("")
+const limiter = buildLimiter({ store: memoryStore() })
+const perIp = limiter({
+  algorithm: fixedWindow({ limit: 1, window: 60_000 }),
+  identify: (request: { ip: string }) => request.ip,
+  name: "ip",
+})
+const result: Promise<LimitResult> = rateLimit(perIp, { ip: "203.0.113.7" })
+const send: RedisSend = () => Promise.resolve([1, 0, 0, 0])
 
-// @ts-expect-error -- greet takes a string.
-greet(1)
+// @ts-expect-error -- perIp identifies a request, not a string.
+void rateLimit(perIp, "203.0.113.7")
 
-void [greeting, error.value]
+void [result, redisStore({ send })]
 `
   )
   writeFileSync(

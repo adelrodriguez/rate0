@@ -24,6 +24,8 @@ ruleset='{
           { "context": "check", "integration_id": 15368 },
           { "context": "analyze", "integration_id": 15368 },
           { "context": "unit", "integration_id": 15368 },
+          { "context": "valkey", "integration_id": 15368 },
+          { "context": "bun", "integration_id": 15368 },
           { "context": "compat", "integration_id": 15368 },
           { "context": "build", "integration_id": 15368 }
         ]

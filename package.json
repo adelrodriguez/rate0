@@ -2,7 +2,19 @@
   "name": "rate0",
   "version": "0.0.0",
   "description": "Atomic rate limiting for Redis and other stores",
-  "keywords": [],
+  "keywords": [
+    "bun",
+    "fixed-window",
+    "ioredis",
+    "rate-limit",
+    "rate-limiting",
+    "ratelimit",
+    "redis",
+    "sliding-window",
+    "token-bucket",
+    "upstash",
+    "valkey"
+  ],
   "homepage": "https://github.com/adelrodriguez/rate0#readme",
   "bugs": {
     "url": "https://github.com/adelrodriguez/rate0/issues"
@@ -28,6 +40,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./stores/memory": {
+      "types": "./dist/stores/memory.d.ts",
+      "import": "./dist/stores/memory.js",
+      "default": "./dist/stores/memory.js"
+    },
+    "./stores/redis": {
+      "types": "./dist/stores/redis.d.ts",
+      "import": "./dist/stores/redis.js",
+      "default": "./dist/stores/redis.js"
     }
   },
   "scripts": {
@@ -48,15 +70,18 @@
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
+    "@types/bun": "1.4.3",
     "@types/node": "24.19.1",
     "@vitest/coverage-v8": "5.0.3",
     "adamantite": "0.43.0",
+    "ioredis": "6.0.0",
     "knip": "6.40.0",
     "oxfmt": "0.72.0",
     "oxlint": "1.87.0",
     "oxlint-tsgolint": "7.0.2003",
     "tsdown": "0.23.0",
     "typescript": "7.0.2",
+    "unplugin-macros": "0.23.3",
     "vitest": "5.0.3"
   },
   "engines": {
