@@ -80,8 +80,10 @@ check(!second.success, "a limiter denies past its limit")
 // A Redis store hashes its scripts with Web Crypto and parses the reply.
 const commands = []
 const store = redis.redisStore({
-  call: (command) => {
-    commands.push(command)
+  del: () => Promise.resolve(0),
+  eval: () => Promise.resolve([1, 0, 60_000, 0]),
+  evalsha: () => {
+    commands.push("EVALSHA")
     return Promise.resolve([1, 0, 60_000, 0])
   },
 })

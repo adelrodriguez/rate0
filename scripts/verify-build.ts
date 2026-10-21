@@ -85,7 +85,11 @@ const perIp = limiter({
   name: "ip",
 })
 const result: Promise<LimitResult> = rateLimit(perIp, { ip: "203.0.113.7" })
-const client: IoredisClient = { call: () => Promise.resolve([1, 0, 0, 0]) }
+const client: IoredisClient = {
+  del: () => Promise.resolve(0),
+  eval: () => Promise.resolve([1, 0, 0, 0]),
+  evalsha: () => Promise.resolve([1, 0, 0, 0]),
+}
 
 // @ts-expect-error -- perIp identifies a request, not a string.
 void rateLimit(perIp, "203.0.113.7")

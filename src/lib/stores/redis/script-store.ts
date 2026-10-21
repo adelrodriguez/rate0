@@ -3,18 +3,23 @@ import type { Store, StoreResult } from "#lib/store/store.ts"
 import { readScript } from "./scripts.macro.ts" with { type: "macro" }
 
 /**
- * Sends one command to a server that speaks the Redis protocol and returns its reply.
+ * The three commands the scripts need, each on one key. A client store sends them through its
+ * client's own methods, so the client applies its key prefix and other key handling.
  */
-export type RedisSend = (command: string, args: string[]) => Promise<unknown>
+export type ScriptCommands = {
+  readonly evalsha: (sha: string, key: string, args: string[]) => Promise<unknown>
+  readonly eval: (source: string, key: string, args: string[]) => Promise<unknown>
+  readonly del: (key: string) => Promise<unknown>
+}
 
 type Script = { readonly source: string; readonly sha: Promise<string> }
 
 /**
  * Counts with Lua scripts on a server that speaks the Redis protocol. Each call runs one script, so
  * it is atomic across all instances that share the server. The client stores adapt their client to
- * `send`.
+ * `commands`.
  */
-export function scriptStore(send: RedisSend): Store {
+export function scriptStore(commands: ScriptCommands): Store {
   const loaded = {
     fixedWindow: script(readScript("fixed-window.lua")),
     slidingWindow: script(readScript("sliding-window.lua")),
@@ -23,18 +28,18 @@ export function scriptStore(send: RedisSend): Store {
 
   async function evaluate({ source, sha }: Script, key: string, args: string[]) {
     try {
-      return await send("EVALSHA", [await sha, "1", key, ...args])
+      return await commands.evalsha(await sha, key, args)
     } catch (error) {
       if (!isNoScriptError(error)) throw error
 
       // EVAL also caches the script, so later calls succeed with EVALSHA.
-      return send("EVAL", [source, "1", key, ...args])
+      return commands.eval(source, key, args)
     }
   }
 
   return {
     clear: async (key) => {
-      await send("DEL", [key])
+      await commands.del(key)
     },
 
     consume: async ({ key, algorithm, cost }) =>

@@ -13,5 +13,9 @@ export type BunRedisClient = {
  * is atomic across all instances that share the server.
  */
 export function bunRedisStore(client: BunRedisClient): Store {
-  return scriptStore((command, args) => client.send(command, args))
+  return scriptStore({
+    del: (key) => client.send("DEL", [key]),
+    eval: (source, key, args) => client.send("EVAL", [source, "1", key, ...args]),
+    evalsha: (sha, key, args) => client.send("EVALSHA", [sha, "1", key, ...args]),
+  })
 }

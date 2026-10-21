@@ -9,16 +9,27 @@ import { redisStore } from "#lib/stores/redis/redis-store.ts"
 const url = process.env.REDIS_URL ?? "redis://localhost:6379"
 
 const ioredis = new Redis(url)
+const ioredisA = new Redis(url, { keyPrefix: "test:a:" })
+const ioredisB = new Redis(url, { keyPrefix: "test:b:" })
 const nodeRedis = await createClient({ url }).connect()
+const nodeRedisA = await createClient({ keyPrefix: "test:a:", url }).connect()
+const nodeRedisB = await createClient({ keyPrefix: "test:b:", url }).connect()
 
 afterAll(async () => {
-  await Promise.all([ioredis.quit(), nodeRedis.close()])
+  await Promise.all([
+    ioredis.quit(),
+    ioredisA.quit(),
+    ioredisB.quit(),
+    nodeRedis.close(),
+    nodeRedisA.close(),
+    nodeRedisB.close(),
+  ])
 })
 
 describe.each([
-  { client: ioredis, name: "ioredis" },
-  { client: nodeRedis, name: "node-redis" },
-])("redisStore with $name", ({ client }) => {
+  { client: ioredis, clientA: ioredisA, clientB: ioredisB, name: "ioredis" },
+  { client: nodeRedis, clientA: nodeRedisA, clientB: nodeRedisB, name: "node-redis" },
+])("redisStore with $name", ({ client, clientA, clientB }) => {
   testStore(() => redisStore(client))
 
   it("reloads its scripts after the server forgets them", async () => {
@@ -31,5 +42,21 @@ describe.each([
     expect(await store.consume({ algorithm, cost: 0, key: "test:flush" })).toMatchObject({
       success: true,
     })
+  })
+
+  it("keeps the counts of clients with different key prefixes apart", async () => {
+    const storeA = redisStore(clientA)
+    const storeB = redisStore(clientB)
+    const algorithm = fixedWindow({ limit: 1, window: 60_000 })
+    const key = crypto.randomUUID()
+
+    expect(await storeA.consume({ algorithm, cost: 1, key })).toMatchObject({ success: true })
+    expect(await storeB.consume({ algorithm, cost: 1, key })).toMatchObject({ success: true })
+    expect(await ioredis.exists(`test:a:${key}`, `test:b:${key}`, key)).toBe(2)
+
+    await storeA.clear(key)
+
+    expect(await ioredis.exists(`test:a:${key}`, `test:b:${key}`)).toBe(1)
+    expect(await storeB.consume({ algorithm, cost: 1, key })).toMatchObject({ success: false })
   })
 })
