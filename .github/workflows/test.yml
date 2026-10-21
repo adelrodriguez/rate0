@@ -15,8 +15,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The Redis store tests need a server, so the unit job runs next to Redis.
   unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm run test
+
+  redis-store:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -47,11 +69,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
-        run: pnpm run test
+      - name: Run Redis store tests
+        run: pnpm run test:redis-store
 
-  # Valkey is a supported server. Run the Redis store tests against it too.
-  valkey:
+  valkey-store:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -82,11 +103,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Redis store tests
-        run: pnpm exec vitest run src/lib/stores/redis
+      - name: Run Valkey store tests
+        run: pnpm run test:valkey-store
 
-  # On Bun, the Redis store tests also run through Bun's own Redis client.
-  bun:
+  bun-store:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -122,8 +142,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Redis store tests on Bun
-        run: bun --bun vitest run src/lib/stores/redis
+      - name: Run Bun store tests
+        run: pnpm run test:bun-store
 
   # Vitest needs a newer Node.js version than the `engines.node` floor. Build with the default
   # Node.js version, then run the built package on the exact floor.
