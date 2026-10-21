@@ -133,9 +133,9 @@ describe("client stores", () => {
   })
 
   it("reject a client they cannot send commands through", () => {
-    // @ts-expect-error -- Bun's client sends with `send`, which the Redis store does not use.
-    void redisStore(bun)
-    // @ts-expect-error -- node-redis sends with `sendCommand`, which the Bun store does not use.
+    // @ts-expect-error -- node-redis names it `evalSha`, and the Valkey store calls `evalsha`.
+    void valkeyStore(nodeRedis)
+    // @ts-expect-error -- node-redis has no `send`, which the Bun store calls.
     void bunRedisStore(nodeRedis)
   })
 })

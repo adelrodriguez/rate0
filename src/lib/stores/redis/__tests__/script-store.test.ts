@@ -1,6 +1,6 @@
 import { Redis } from "ioredis"
 import { afterAll, describe, expect, it } from "vitest"
-import type { RedisSend } from "#lib/stores/redis/script-store.ts"
+import type { ScriptCommands } from "#lib/stores/redis/script-store.ts"
 import { fixedWindow, slidingWindow, tokenBucket } from "#lib/algorithms/algorithms.ts"
 import { memoryStore } from "#lib/stores/memory/memory-store.ts"
 import { InvalidReplyError, scriptStore } from "#lib/stores/redis/script-store.ts"
@@ -16,7 +16,11 @@ function sleep(ms: number) {
 }
 
 const client = new Redis(url)
-const send: RedisSend = (command, args) => client.call(command, args)
+const commands: ScriptCommands = {
+  del: (key) => client.del(key),
+  eval: (source, key, args) => client.eval(source, 1, key, ...args),
+  evalsha: (sha, key, args) => client.evalsha(sha, 1, key, ...args),
+}
 
 afterAll(async () => {
   await client.quit()
@@ -31,7 +35,7 @@ describe("scriptStore", () => {
     slidingWindow({ limit: 5, window: 100 }),
     tokenBucket({ capacity: 5, interval: 100, refillRate: 2 }),
   ])("returns what the memory store returns for $type", async (algorithm) => {
-    const redis = scriptStore(send)
+    const redis = scriptStore(commands)
     let now = 0
     const memory = memoryStore({ clock: () => now })
     const key = `test:${crypto.randomUUID()}`
@@ -51,11 +55,11 @@ describe("scriptStore", () => {
   })
 
   it("reloads its scripts after the server forgets them", async () => {
-    const store = scriptStore(send)
+    const store = scriptStore(commands)
     const algorithm = fixedWindow({ limit: 5, window: 2000 })
     await store.consume({ algorithm, cost: 1, key: "test:flush" })
 
-    await send("SCRIPT", ["FLUSH"])
+    await client.script("FLUSH")
 
     expect(await store.consume({ algorithm, cost: 0, key: "test:flush" })).toMatchObject({
       success: true,
@@ -63,18 +67,28 @@ describe("scriptStore", () => {
   })
 
   it("runs a loaded script by its hash alone", async () => {
-    const commands: string[] = []
-    const store = scriptStore((command, args) => {
-      commands.push(command)
-      return send(command, args)
+    const sent: string[] = []
+    const store = scriptStore({
+      del: (key) => {
+        sent.push("DEL")
+        return commands.del(key)
+      },
+      eval: (source, key, args) => {
+        sent.push("EVAL")
+        return commands.eval(source, key, args)
+      },
+      evalsha: (sha, key, args) => {
+        sent.push("EVALSHA")
+        return commands.evalsha(sha, key, args)
+      },
     })
     const algorithm = fixedWindow({ limit: 5, window: 2000 })
     await store.consume({ algorithm, cost: 1, key: "test:hash" })
-    commands.length = 0
+    sent.length = 0
 
     await store.consume({ algorithm, cost: 1, key: "test:hash" })
 
-    expect(commands).toEqual(["EVALSHA"])
+    expect(sent).toEqual(["EVALSHA"])
   })
 
   it.each([
@@ -82,11 +96,11 @@ describe("scriptStore", () => {
     slidingWindow({ limit: 5, window: 2000 }),
     tokenBucket({ capacity: 5, interval: 2000, refillRate: 1 }),
   ])("expires $type state once it no longer matters", async (algorithm) => {
-    const store = scriptStore(send)
+    const store = scriptStore(commands)
     const key = `test:${crypto.randomUUID()}`
     await store.consume({ algorithm, cost: 1, key })
 
-    const ttl = await send("PTTL", [key])
+    const ttl = await client.pttl(key)
 
     expect(ttl).toBeGreaterThan(0)
     expect(ttl).toBeLessThanOrEqual(4000)
@@ -97,18 +111,22 @@ describe("scriptStore", () => {
     slidingWindow({ limit: 5, window: week }),
     tokenBucket({ capacity: 5, interval: week, refillRate: 1 }),
   ])("expires $type state with a one-week window", async (algorithm) => {
-    const store = scriptStore(send)
+    const store = scriptStore(commands)
     const key = `test:${crypto.randomUUID()}`
     await store.consume({ algorithm, cost: 1, key })
 
-    const ttl = await send("PTTL", [key])
+    const ttl = await client.pttl(key)
 
     expect(ttl).toBeGreaterThan(0)
     expect(ttl).toBeLessThanOrEqual(2 * week)
   })
 
   it("rejects a reply it does not recognize", async () => {
-    const store = scriptStore(() => Promise.resolve(["OK"]))
+    const store = scriptStore({
+      del: () => Promise.resolve(0),
+      eval: () => Promise.resolve(["OK"]),
+      evalsha: () => Promise.resolve(["OK"]),
+    })
 
     await expect(
       store.consume({ algorithm: fixedWindow({ limit: 5, window: 2000 }), cost: 1, key: "k" })

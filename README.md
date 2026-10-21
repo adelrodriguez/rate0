@@ -398,7 +398,7 @@ import { bunRedisStore } from "rate0/stores/bun-redis"
 bunRedisStore(new Bun.RedisClient(process.env.REDIS_URL))
 ```
 
-The stores work with Redis 7 or later and Valkey 7.2 or later, on any server that speaks the Redis protocol and runs Lua scripts. They run the same scripts, so they count the same way.
+The stores work with Redis 7 or later and Valkey 7.2 or later, on any server that speaks the Redis protocol and runs Lua scripts. They run the same scripts, so they count the same way. A client's `keyPrefix` applies to every key the store writes and clears.
 
 Each check runs one Lua script with `EVALSHA`, and loads the script with `EVAL` when the server does not have it. Scripts read the time with `TIME`, so every instance agrees on window boundaries. Keys expire when their state no longer matters.
 

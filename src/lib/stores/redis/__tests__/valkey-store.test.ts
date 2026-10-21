@@ -8,9 +8,11 @@ import { valkeyStore } from "#lib/stores/redis/valkey-store.ts"
 const url = process.env.REDIS_URL ?? "redis://localhost:6379"
 
 const client = new Valkey(url)
+const clientA = new Valkey(url, { keyPrefix: "test:a:" })
+const clientB = new Valkey(url, { keyPrefix: "test:b:" })
 
 afterAll(async () => {
-  await client.quit()
+  await Promise.all([client.quit(), clientA.quit(), clientB.quit()])
 })
 
 describe("valkeyStore with iovalkey", () => {
@@ -26,5 +28,21 @@ describe("valkeyStore with iovalkey", () => {
     expect(await store.consume({ algorithm, cost: 0, key: "test:flush" })).toMatchObject({
       success: true,
     })
+  })
+
+  it("keeps the counts of clients with different key prefixes apart", async () => {
+    const storeA = valkeyStore(clientA)
+    const storeB = valkeyStore(clientB)
+    const algorithm = fixedWindow({ limit: 1, window: 60_000 })
+    const key = crypto.randomUUID()
+
+    expect(await storeA.consume({ algorithm, cost: 1, key })).toMatchObject({ success: true })
+    expect(await storeB.consume({ algorithm, cost: 1, key })).toMatchObject({ success: true })
+    expect(await client.exists(`test:a:${key}`, `test:b:${key}`, key)).toBe(2)
+
+    await storeA.clear(key)
+
+    expect(await client.exists(`test:a:${key}`, `test:b:${key}`)).toBe(1)
+    expect(await storeB.consume({ algorithm, cost: 1, key })).toMatchObject({ success: false })
   })
 })
