@@ -2,7 +2,7 @@
   <h1 align="center">✋🏻 <code>richter</code></h1>
 
   <p align="center">
-    <strong>Atomic rate limiting for Redis and other stores</strong>
+    <strong>Atomic rate limiting with pluggable stores</strong>
   </p>
 </div>
 
