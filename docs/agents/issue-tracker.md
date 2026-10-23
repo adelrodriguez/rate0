@@ -4,7 +4,7 @@ Issues and PRDs for this repository live in GitHub Issues. Use the `gh` CLI for 
 
 ## Repository
 
-`adelrodriguez/rate0`
+`adelrodriguez/richter`
 
 ## Conventions
 

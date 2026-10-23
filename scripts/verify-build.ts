@@ -5,7 +5,7 @@ import { join } from "node:path"
 import packageJson from "../package.json" with { type: "json" }
 
 const packageRoot = join(import.meta.dirname, "..")
-const temporaryDirectory = mkdtempSync(join(tmpdir(), "rate0-build-"))
+const temporaryDirectory = mkdtempSync(join(tmpdir(), "richter-build-"))
 const exportPaths = [
   packageJson.module,
   packageJson.types,
@@ -43,7 +43,7 @@ try {
   const tarballPath = join(temporaryDirectory, tarball)
   writeFileSync(
     join(temporaryDirectory, "package.json"),
-    `${JSON.stringify({ name: "rate0-build-verification", private: true, type: "module" }, null, 2)}\n`
+    `${JSON.stringify({ name: "richter-build-verification", private: true, type: "module" }, null, 2)}\n`
   )
   run("npm", ["install", "--ignore-scripts", "--no-package-lock", tarballPath], temporaryDirectory)
 
@@ -51,11 +51,11 @@ try {
     join(temporaryDirectory, "runtime.mjs"),
     `import assert from "node:assert/strict"
 
-import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "rate0"
-import { memoryStore } from "rate0/stores/memory"
-import { bunRedisStore } from "rate0/stores/bun-redis"
-import { redisStore } from "rate0/stores/redis"
-import { valkeyStore } from "rate0/stores/valkey"
+import { buildLimiter, fixedWindow, InvalidOptionError, rateLimit } from "richter"
+import { memoryStore } from "richter/stores/memory"
+import { bunRedisStore } from "richter/stores/bun-redis"
+import { redisStore } from "richter/stores/redis"
+import { valkeyStore } from "richter/stores/valkey"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perKey = limiter({ algorithm: fixedWindow({ limit: 1, window: 60_000 }), name: "key" })
@@ -72,11 +72,11 @@ assert.equal(typeof valkeyStore, "function")
 
   writeFileSync(
     join(temporaryDirectory, "consumer.ts"),
-    `import { buildLimiter, fixedWindow, rateLimit } from "rate0"
-import type { LimitResult } from "rate0"
-import { memoryStore } from "rate0/stores/memory"
-import { redisStore } from "rate0/stores/redis"
-import type { IoredisClient } from "rate0/stores/redis"
+    `import { buildLimiter, fixedWindow, rateLimit } from "richter"
+import type { LimitResult } from "richter"
+import { memoryStore } from "richter/stores/memory"
+import { redisStore } from "richter/stores/redis"
+import type { IoredisClient } from "richter/stores/redis"
 
 const limiter = buildLimiter({ store: memoryStore() })
 const perIp = limiter({

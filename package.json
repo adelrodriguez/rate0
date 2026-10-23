@@ -1,5 +1,5 @@
 {
-  "name": "rate0",
+  "name": "richter",
   "version": "0.0.0",
   "description": "Atomic rate limiting for Redis and other stores",
   "keywords": [
@@ -15,15 +15,15 @@
     "upstash",
     "valkey"
   ],
-  "homepage": "https://github.com/adelrodriguez/rate0#readme",
+  "homepage": "https://github.com/adelrodriguez/richter#readme",
   "bugs": {
-    "url": "https://github.com/adelrodriguez/rate0/issues"
+    "url": "https://github.com/adelrodriguez/richter/issues"
   },
   "license": "MIT",
   "author": "Adel Rodríguez",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/adelrodriguez/rate0.git"
+    "url": "git+https://github.com/adelrodriguez/richter.git"
   },
   "files": [
     "dist"
