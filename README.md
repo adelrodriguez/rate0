@@ -1,19 +1,19 @@
 <div align="center">
-  <h1 align="center">🚦 <code>rate0</code></h1>
+  <h1 align="center">🚦 <code>richter</code></h1>
 
   <p align="center">
     <strong>Atomic rate limiting for Redis and other stores</strong>
   </p>
 </div>
 
-rate0 counts requests in a store that every instance of your application shares, so a limit holds across instances and restarts. Each check runs as one atomic step inside the store: requests that arrive together can never pass a limit together.
+richter counts requests in a store that every instance of your application shares, so a limit holds across instances and restarts. Each check runs as one atomic step inside the store: requests that arrive together can never pass a limit together.
 
-You define limiters once and run them with plain functions. rate0 has no framework integrations, so you compose your own middleware for Hono, Express, or anything else in a few lines.
+You define limiters once and run them with plain functions. richter has no framework integrations, so you compose your own middleware for Hono, Express, or anything else in a few lines.
 
 ## Contents
 
 - [Features](#features)
-- [Install rate0](#install-rate0)
+- [Install richter](#install-richter)
 - [Get started](#get-started)
 - [Define limiters](#define-limiters)
   - [Choose an algorithm](#choose-an-algorithm)
@@ -47,13 +47,13 @@ You define limiters once and run them with plain functions. rate0 has no framewo
 - **Typed:** The input type of each limiter comes from how it identifies the caller.
 - **No runtime dependencies.**
 
-## Install rate0
+## Install richter
 
 ```sh
-pnpm add rate0
+pnpm add richter
 ```
 
-You can also use Bun, npm, or Yarn. rate0 needs Node.js 20 or later, or Bun.
+You can also use Bun, npm, or Yarn. richter needs Node.js 20 or later, or Bun.
 
 ## Get started
 
@@ -61,8 +61,8 @@ Create a limiter factory with a store, define a limiter, and run it:
 
 ```typescript
 import Redis from "ioredis"
-import { buildLimiter, rateLimit, slidingWindow } from "rate0"
-import { redisStore } from "rate0/stores/redis"
+import { buildLimiter, rateLimit, slidingWindow } from "richter"
+import { redisStore } from "richter/stores/redis"
 
 const redis = new Redis(process.env.REDIS_URL)
 
@@ -91,7 +91,7 @@ A limiter is a named definition: the algorithm that decides, and how to identify
 Every duration is a whole number of milliseconds.
 
 ```typescript
-import { fixedWindow, slidingWindow, tokenBucket } from "rate0"
+import { fixedWindow, slidingWindow, tokenBucket } from "richter"
 
 // At most 2,000 units per day. Days start at midnight UTC.
 fixedWindow({ limit: 2_000, window: 86_400_000 })
@@ -131,7 +131,7 @@ const perDevice = limiter({
 await rateLimit(perDevice, c) // c must be a Context
 ```
 
-An identity can have several parts. Return a tuple, and rate0 encodes the parts so that different tuples never share a count:
+An identity can have several parts. Return a tuple, and richter encodes the parts so that different tuples never share a count:
 
 ```typescript
 identify: (c: Context) => [c.get("orgId"), c.get("userId")]
@@ -213,7 +213,7 @@ Limiters that ran before a denial have already spent. Put the broadest limit, su
 ### Read and clear counts
 
 ```typescript
-import { clear, remaining } from "rate0"
+import { clear, remaining } from "richter"
 
 await remaining(perIp, c) // { name, limit, remaining, reset }, spends nothing
 await clear(perIp, c) // restores every unit
@@ -258,7 +258,7 @@ For a denied request, `reset` is the first moment the same request can succeed, 
 `headers(result)` returns the `RateLimit-Policy` and `RateLimit` headers of the [IETF RateLimit header fields draft](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/), and `Retry-After` for a denial:
 
 ```typescript
-import { headers } from "rate0"
+import { headers } from "richter"
 
 headers(result)
 // {
@@ -277,7 +277,7 @@ Middleware is a few lines of your own code. This Hono middleware runs limiters, 
 ```typescript
 import type { Context } from "hono"
 import { createMiddleware } from "hono/factory"
-import { headers, rateLimit, type Limiter } from "rate0"
+import { headers, rateLimit, type Limiter } from "richter"
 
 export function withRateLimit(limiters: [Limiter<Context>, ...Array<Limiter<Context>>]) {
   return createMiddleware(async (c, next) => {
@@ -386,15 +386,15 @@ Each client has its own store. Pass the client as it is:
 
 ```typescript
 // ioredis or node-redis
-import { redisStore } from "rate0/stores/redis"
+import { redisStore } from "richter/stores/redis"
 redisStore(redis)
 
 // iovalkey
-import { valkeyStore } from "rate0/stores/valkey"
+import { valkeyStore } from "richter/stores/valkey"
 valkeyStore(valkey)
 
 // Bun's own client
-import { bunRedisStore } from "rate0/stores/bun-redis"
+import { bunRedisStore } from "richter/stores/bun-redis"
 bunRedisStore(new Bun.RedisClient(process.env.REDIS_URL))
 ```
 
@@ -409,7 +409,7 @@ Every check touches a single key, as Redis Cluster requires.
 `memoryStore` counts in the current process. Each instance of your application counts separately, and a restart clears all counts. Use it for tests, for single-instance applications, and as a fallback.
 
 ```typescript
-import { memoryStore } from "rate0/stores/memory"
+import { memoryStore } from "richter/stores/memory"
 
 memoryStore()
 memoryStore({ clock: () => fakeNow }) // a clock you control, for tests
@@ -420,7 +420,7 @@ memoryStore({ clock: () => fakeNow }) // a clock you control, for tests
 A store implements two functions:
 
 ```typescript
-import type { Store } from "rate0"
+import type { Store } from "richter"
 
 const store: Store = {
   consume: async ({ key, algorithm, cost }) => {
@@ -451,7 +451,7 @@ Key-value abstractions such as unstorage drivers cannot be stores, because they 
 
 ## Errors
 
-rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/stores/redis`, `rate0/stores/valkey`, and `rate0/stores/bun-redis`, and the rest from `rate0`:
+richter exports these `Error` subclasses. `InvalidReplyError` comes from `richter/stores/redis`, `richter/stores/valkey`, and `richter/stores/bun-redis`, and the rest from `richter`:
 
 | Error                | Fields            | When                                                                    |
 | -------------------- | ----------------- | ----------------------------------------------------------------------- |
@@ -464,7 +464,7 @@ rate0 exports these `Error` subclasses. `InvalidReplyError` comes from `rate0/st
 
 ## Compared with other libraries
 
-|                         | rate0                      | hono-rate-limiter        | rate-limiter-flexible |
+|                         | richter                    | hono-rate-limiter        | rate-limiter-flexible |
 | ----------------------- | -------------------------- | ------------------------ | --------------------- |
 | Stores                  | Redis, Valkey, Bun, memory | Memory, Redis, unstorage | Many                  |
 | Algorithms              | Fixed, sliding, bucket     | Fixed                    | Fixed                 |

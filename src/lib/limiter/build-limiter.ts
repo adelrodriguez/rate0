@@ -102,7 +102,7 @@ export type Remaining = {
   readonly reset: number
 }
 
-export const internal = Symbol("rate0.limiter")
+export const internal = Symbol("richter.limiter")
 
 type Internal<Input> = {
   readonly capacity: number
